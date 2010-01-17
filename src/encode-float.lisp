@@ -1,3 +1,5 @@
+(in-package :cl-mongo)
+
 ;;--------------------
 ;; Deal with floats....
 ;;
