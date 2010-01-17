@@ -18,7 +18,7 @@
   ((:module "src"
     :serial t
     :components ((:static-file "COPYING")
-		 (:static-file "README")
+		 (:static-file "README.md")
 		 (:file "packages")
 		 (:file "octets")
 		 (:file "encode-float")
