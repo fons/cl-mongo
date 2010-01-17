@@ -6,9 +6,9 @@
 
 (asdf:defsystem cl-mongo
   :name   "cl-mongo"
-  :author "Fons Haffmans"
+  :author "Fons Haffmans; fons.haffmans@gmail.com"
   :version "0.0.1"
-  :licence "FSF"
+  :licence "MIT"
   :description "lisp system to interact with mongo, a no-sql db"
   :depends-on (:uuid
 	       :babel
@@ -17,7 +17,9 @@
   :components 
   ((:module "src"
     :serial t
-    :components ((:file "packages")
+    :components ((:static-file "COPYING")
+		 (:static-file "README")
+		 (:file "packages")
 		 (:file "octets")
 		 (:file "encode-float")
 		 (:file "oid")
