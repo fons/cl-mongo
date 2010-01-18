@@ -1,0 +1,3 @@
+bson.lisp:    (ht->document (to-hash-map array)))
+bson.lisp:      (values (ht->document ht) rest))))
+save-document.lisp:(defun ht->document (ht) 

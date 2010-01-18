@@ -76,15 +76,4 @@
 	   (ignore size-supplied-p) (ignore array-supplied-p) )
   (bson-encode key (bson-encode-container value )))
 
-(defun ht->document (ht) 
-  (multiple-value-bind (oid oid-supplied) (gethash "_id" ht)
-    (let ((doc (make-document :oid (if oid-supplied oid nil))))
-      (when oid-supplied (remhash "_id" ht))
-      (with-hash-table-iterator (iterator ht)
-	(dotimes (repeat (hash-table-count ht))
-	  (multiple-value-bind (exists-p key value) (iterator)
-	    (if exists-p (add-element key value doc)))))
-      doc)))
-
-
 
