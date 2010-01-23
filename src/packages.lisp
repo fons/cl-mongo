@@ -10,11 +10,21 @@
    :serverstatus
    :deleteindexes
 
+   ;; document
+   :document
+   :make-document
+   :add-element
+   :get-element
+   :rm-element
+   :ht->document
+
    ;;commands
    :mongo
    :kv
    :db.use
    :db.insert
+   :db.update
+   :db.save
    :db.find
    :db.next
    :db.iter
@@ -26,7 +36,9 @@
    :db.collections
    :db.count
    :close-all-connections
-   
+   :time-zone
+   :date-time
+
    ;; shell commands
    :nwd
    :cwd
@@ -35,4 +47,5 @@
    :nd
    :rm
    :docs
+   :now
    ))

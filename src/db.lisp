@@ -11,19 +11,20 @@
 
 (defmethod db.insert ( (collection string) (document t) &key (mongo nil) )
   (let ((mongo (or mongo (mongo))))
-    (mongo-message mongo (mongo-insert (full-collection-name mongo collection) document) :timeout 0)))
+    (mongo-message mongo (mongo-insert (full-collection-name mongo collection) 
+				       (bson-encode-container document)) :timeout 0)))
 
-(defmethod db.insert ( (collection string) (document hash-table) &key (mongo nil) )
-  (call-next-method collection (bson-encode-container document) :mongo mongo))
+;(defmethod db.insert ( (collection string) (document hash-table) &key (mongo nil) )
+;  (call-next-method collection (bson-encode-container document) :mongo mongo))
 
-(defmethod db.insert ( (collection string) (document document) &key (mongo nil) )
-  (call-next-method collection (bson-encode-container document) :mongo mongo))
+;(defmethod db.insert ( (collection string) (document document) &key (mongo nil) )
+;  (call-next-method collection (bson-encode-container document) :mongo mongo))
 
-(defmethod db.insert ( (collection string) (kv pair) &key (mongo nil) )
-  (call-next-method collection (bson-encode-container (kv->doc kv)  ) :mongo mongo))
+;(defmethod db.insert ( (collection string) (kv pair) &key (mongo nil) )
+;  (call-next-method collection (bson-encode-container kv  ) :mongo mongo))
 
-(defmethod db.insert ( (collection string) (kv hash-table) &key (mongo nil) )
-  (call-next-method collection (bson-encode-container kv) :mongo mongo))
+;(defmethod db.insert ( (collection string) (kv hash-table) &key (mongo nil) )
+;  (call-next-method collection (bson-encode-container kv) :mongo mongo))
 
 (defgeneric db.find (collection  kv &key)
   (:documentation "find a document in the db collection"))
@@ -62,6 +63,29 @@
 		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
   (call-next-method collection (bson-encode-container kv)
 		    :mongo mongo :options options :skip skip :limit limit :selector selector ))
+
+(defgeneric db.update ( collection selector new-document &key )
+  (:documentation "find a document and replace it with a new version"))
+
+(defmethod db.update ( (collection string) (selector t) (new-document t) 
+		      &key (mongo nil) (upsert nil) (multi nil) )
+  (let ((mongo (or mongo (mongo))))
+    (mongo-message mongo (mongo-update 
+			  (full-collection-name mongo collection) 
+			  (bson-encode-container selector) 
+			  (bson-encode-container new-document) 
+			  :options (update-options :upsert upsert :multi-update multi))
+		   :timeout 0)))
+
+
+(defgeneric db.save ( collection document &key) 
+  (:documentation "save a document; to insert if no _id is found"))
+
+(defmethod db.save ( (collection string) (document document) &key (mongo nil) )
+  (db.update collection (kv "_id" (_id document) ) document :mongo (or mongo (mongo) ) :upsert t))
+
+(defmethod db.save ( (collection string) (document hash-table) &key (mongo nil) )
+  (db.insert collection document :mongo (or mongo (mongo)) ))
 
 (defun headerp (val)
   (and (consp val) (= 1 (length val))))

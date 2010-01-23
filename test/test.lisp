@@ -1,6 +1,5 @@
-(in-package :cl-mongo)
+(in-package :cl-mongo-test)
 
-(defconstant +TEST-PORT+  9999)
 
 (defun gtb ( loc )
   (let ((res 255))
@@ -237,7 +236,7 @@
       (add-element "5" 30 doc)
       (test-insert-doc doc :port +MONGO-PORT+)))
 
-(defun insert-lots (n)
+(defun insert-lots (collection n)
   (dotimes (i n)
     (let ((doc (make-document)))
       (add-element (format nil "~D" i) i doc)
@@ -245,5 +244,5 @@
       (add-element (format nil "l") (- i 9.00)  doc)
       (add-element (format nil "index-this") i doc)
       (add-element (format nil "value-1") (* 78 i) doc)
-      (test-insert-doc doc :port +MONGO-PORT+))))
+      (db.insert collection doc ))))
   

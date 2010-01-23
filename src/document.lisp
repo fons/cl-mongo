@@ -94,6 +94,8 @@
 
 ;;(defmethod bson-encode-container ( (container array) )
 ;;  container)
+(defmethod bson-encode-container ( (container pair) &key (array nil) (size 10) )
+  (bson-encode-container (kv->ht container) :array array :size size))
 
 (defmethod bson-encode-container ( (container document) &key (array nil) (size 10) )
   (setf (gethash "_id" (elements container)) (_id container))

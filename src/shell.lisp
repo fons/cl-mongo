@@ -75,6 +75,12 @@
 (defun nd (result &key (stream t) )
   (pp result :stream stream :nd t))
 
+(defun now()
+  (make-bson-time))
+
+(defun date-time (second minute hour day month year &optional (time-zone *bt-time-zone*) )
+  (make-bson-time (gmt-to-bson-time (encode-universal-time second minute hour day month year time-zone))))
+
 ;(defgeneric index ( collection name action &key )
 ;  (:documentation "shell index managment"))
 

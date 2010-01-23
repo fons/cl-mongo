@@ -73,6 +73,9 @@
 (defun octet-to-int64 (vec)
   (to-signed-value (to-val vec 8) :size 63 :max-uint +max-uint64+)) 
 
+(defun octet-to-uint64 (vec)
+  (to-val vec 8) )
+
 (defun octet-to-byte (vec)
   (to-val vec 1))
 

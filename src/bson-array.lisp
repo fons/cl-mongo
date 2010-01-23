@@ -95,7 +95,7 @@ A note of the bson-array design
   (let* ((size (if size-supplied-p size 10))
 	 (array (if array-supplied-p array (make-octet-vector size))))
     (labels ((encode-value (array)
-	       (add-octets (array value) array)))    ; add value
+	       (add-octets (data-array value) array)))    ; add value
       (call-next-method key value :array array :type type :encoder (if encoder encoder #'encode-value)))))
 
 (defun bson-encode-cons (list stack bson-array-stack)

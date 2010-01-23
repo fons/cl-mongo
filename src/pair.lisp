@@ -36,11 +36,7 @@
   (declare (ignore rest))
   (pair (string-downcase a) b))
 
-;
-;; TODO -> don't return a cons as that's basically an array,
-;; a compound query is a document/hash table.
-;; when returning a cons --> need to call kv->ht on the cons !!  
-;; so you might as well incorporate that stright in here
+
 (defmethod kv ( (a pair) (b pair) &rest rest)
   (let ((ht (make-hash-table :test 'equal)))
     (setf (gethash (pair-key a) ht) (pair-value a))
@@ -49,13 +45,6 @@
       (setf (gethash (pair-key el) ht) (pair-value el)))
     ht))
 
-(defmethod kv-alt ( (a pair) (b pair) &rest rest)
-  (let ((lst (list b a)))
-    (dolist (el rest)
-      (push el lst))
-    (nreverse lst)))
-
-    
 (defun bson-encode-pair ( kv )
   (bson-encode (pair-key kv) (pair-value kv)))
 
@@ -74,13 +63,17 @@
   (let ((doc (make-document)))
     (add-element (pair-key kv) (pair-value kv) doc)))
 
-(defmethod kv->doc ( (kv cons) ) 
-  (let ((doc (make-document)))
-    (dolist (pair kv)
-      (add-element (pair-key pair) (pair-value pair) doc))
-    doc))
+(defmethod kv->doc ( (kv hash-table) ) 
+  (ht->document kv))
 
+(defgeneric kv->ht ( kv )
+  (:documentation "turn a pair of key/value pairs into a hash table"))
 
-(defmethod kv->ht ( (kv cons) )
-  (elements (kv->doc kv)))
+(defmethod kv->ht ( (kv pair) )
+  (let ((ht (make-hash-table :test 'equal)))
+    (setf (gethash (pair-key kv) ht) (pair-value kv))
+    ht))
+
+(defmethod kv->ht ( (kv hash-table) )
+  kv)
 

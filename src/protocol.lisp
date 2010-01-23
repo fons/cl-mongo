@@ -11,10 +11,10 @@
 (defgeneric mongo-update (collection selector document &key options)
   (:documentation "insert function for mongo"))
 
-(defun update-options ( &key (upsert 0 upsert-p) (multi-update 0 multi-update-p) )
+(defun update-options ( &key (upsert nil) (multi-update nil) )
   (let ((value 0))
-    (when upsert-p       (setf (ldb (byte 1 0) value) upsert))
-    (when multi-update-p (setf (ldb (byte 1 1) value) multi-update))
+    (when upsert         (setf (ldb (byte 1 0) value) 1))
+    (when multi-update (setf (ldb (byte 1 1) value) 1))
     value))
 
 (defmethod mongo-update ( (collection string) (selector array) (document array) &key (options 0) )

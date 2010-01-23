@@ -1,14 +1,18 @@
 (in-package :cl-mongo)
 
+(defconstant +default-array-size+ 100   "size of default array in the encoder")
+
 (defconstant +bson-data-number+   1   "bson number encoding")
 (defconstant +bson-data-string+   2   "bson string encoding")
 (defconstant +bson-data-object+   3   "bson data array; bson object")
 (defconstant +bson-data-array+    4   "bson array")
 (defconstant +bson-data-oid+      7   "bson oid encoding")
 (defconstant +bson-data-boolean+  8   "bson boolean encoding")
+(defconstant +bson-data-date+     9   "bson date encoding")
+(defconstant +bson-data-null+     10  "bson null encoding")
+(defconstant +bson-data-symbol+   14  "bson symbol encoding")
 (defconstant +bson-data-int32+    16  "bson 32 bit int encoding")
 (defconstant +bson-data-long+     18  "bson 64 bit int encoding")
-
 
 #|
   bson-encode encodes a complete bson object.
@@ -16,8 +20,6 @@
   When creating composites these need to be skipped or removed..
 |#
 
-(defgeneric bson-encode(key value &key array size type encoder)
-  (:documentation "encode a bson data element"))
 
 (defun set-array-length(array &key (start 0 start-supplied-p))
   (let* ((head  (if start-supplied-p start (fill-pointer array))))      ; save the stack pointer
@@ -26,8 +28,10 @@
 (defun null-terminate-array(array)
   (add-octets (byte-to-octet 0) array))                       ; ending nul
 
-(defmethod bson-encode(key value &key array size type encoder)
-  (declare (ignore size))
+(defgeneric bson-encode(key value &key )
+  (:documentation "encode a bson data element"))
+
+(defmethod bson-encode( (key string) (value t) &key array type encoder)
   (let* ((head  (fill-pointer array)))                         ; save the stack pointer
     (add-octets (int32-to-octet 0)    array)                   ; length, set to zero
     (add-octets (byte-to-octet  type) array)                   ; data element code
@@ -37,36 +41,32 @@
     (set-octets head (int32-to-octet (- (length array) head) ) array)      ; set length    
     array))
 
-(defmethod bson-encode( (key (eql nil)) (value (eql nil)) &key (array nil array-supplied-p) size type encoder)
-  (declare (ignore size) (ignore type) (ignore encoder) )
-  (let ((array (if array-supplied-p array (make-octet-vector 5))))
+		  
+;;; empty object
+(defmethod bson-encode( (key (eql nil)) (value (eql nil)) &key (array nil))
+  (let ((array (or array (make-octet-vector +default-array-size+))))
     (add-octets (int32-to-octet 0)    array)                   ; length, set to zero
     (add-octets (byte-to-octet 0)     array)                  ; ending nul
     (set-octets 0 (int32-to-octet (length array)  ) array)      ; set length    
     array))
 
-(defmethod bson-encode ( (key integer) value &key (array nil array-supplied-p) 
-			(size 10 size-supplied-p) 
-			(type +bson-data-array+) (encoder nil))
-  (declare (ignore encoder) (ignore array) (ignore type) (ignore size) 
-	   (ignore size-supplied-p) (ignore array-supplied-p) )
+;;used in arrays, so you can just say (bson-encode 1 ...)
+;;
+(defmethod bson-encode ( (key integer) value &key ) 
   (bson-encode (format nil "~A" key) value)) 
 	       
-(defmethod bson-encode( (key string) (value string) &key (array nil array-supplied-p) (size 10 size-supplied-p) 
-		       (type +bson-data-string+) (encoder nil) )
-  (declare (ignore encoder))
-  (let* ((size (if size-supplied-p size 10))
-	 (array (if array-supplied-p array (make-octet-vector size))))
+(defmethod bson-encode ( (key string) (value string) &key (array nil) (type +bson-data-string+) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
     (labels ((encode-value (array)
 	       (add-octets (int32-to-octet (1+ (length value)) ) array)   ; length of the value string
 	       (add-octets (string-to-null-terminated-octet value) array))) ; value string, null terminated
       (call-next-method key value :array array :type type :encoder #'encode-value))))
 
-(defmethod bson-encode( (key string) (value integer) &key (array nil array-supplied-p) (size 10 size-supplied-p) 
-		       (type +bson-data-int32+) (encoder nil))
-  (declare (ignore encoder) (ignore type))
-  (let* ((size (if size-supplied-p size 10))
-	 (array (if array-supplied-p array (make-octet-vector size))))
+(defmethod bson-encode ( (key string) (value symbol) &key (array nil) )
+  (bson-encode key (string value) :array array :type +bson-data-symbol+ ))
+
+(defmethod bson-encode( (key string) (value integer) &key (array nil)) 
+  (let ((array (or array (make-octet-vector +default-array-size+))))
     (labels ((encode-value32(array)
 	       (add-octets (int32-to-octet value ) array)) ; value converted to 32 bits
 	     (encode-value64(array)
@@ -75,95 +75,107 @@
 	  (call-next-method key value :array array :type +bson-data-int32+ :encoder #'encode-value32)
 	  (call-next-method key value :array array :type +bson-data-long+ :encoder #'encode-value64)))))
       
-(defmethod bson-encode( (key string) (value float) &key (array nil array-supplied-p) (size 10 size-supplied-p) 
-		       (type +bson-data-number+) (encoder nil))
-  (let* ((size (if size-supplied-p size 10))
-	 (array (if array-supplied-p array (make-octet-vector size))))
+(defmethod bson-encode( (key string) (value float) &key (array nil) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
     (labels ((encode-value(array) 
 	       (add-octets (int64-to-octet (encode-double-float-bits value)) array))) ;convert float to octet
-      (call-next-method key value :array array :type type :encoder (if encoder encoder #'encode-value)))))
+      (call-next-method key value :array array :type +bson-data-number+ :encoder #'encode-value))))
 
+(defmethod bson-encode( (key string) (value bson-time) &key (array nil)) 
+  (let ((array (or array (make-octet-vector +default-array-size+))))
+    (labels ((encode-date(array)
+      	       (add-octets (int64-to-octet (raw value) ) array))) ; value converted to 64 bits
+      (call-next-method key value :array array :type +bson-data-date+ :encoder #'encode-date))))
+      
 
-(defmethod bson-encode( (key string) (value (eql t)) &key (array nil array-supplied-p) (size 10 size-supplied-p) 
-		       (type +bson-data-boolean+) (encoder nil))
-  (let* ((size (if size-supplied-p size 10))
-	 (array (if array-supplied-p array (make-octet-vector size))))
+(defmethod bson-encode-boolean( (key string) value  &key (array nil) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
     (labels ((encode-value (array)
 	       (add-octets (byte-to-octet (bool-to-byte value)) array)))    ; add value
-      (call-next-method key value :array array :type type :encoder (if encoder encoder #'encode-value)))))
+      (bson-encode key value :array array :type +bson-data-boolean+ :encoder #'encode-value))))
 
-
-(defmethod bson-encode( (key string) (value (eql nil)) &key (array nil array-supplied-p) (size 10 size-supplied-p) 
-		       (type +bson-data-boolean+) (encoder nil))
-  (let* ((size (if size-supplied-p size 10))
-	 (array (if array-supplied-p array (make-octet-vector size))))
+(defmethod bson-encode ( (key string) (value (eql t))  &key (array nil) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
     (labels ((encode-value (array)
 	       (add-octets (byte-to-octet (bool-to-byte value)) array)))    ; add value
-      (call-next-method key value :array array :type type :encoder (if encoder encoder #'encode-value)))))
+      (call-next-method key value :array array :type +bson-data-boolean+ :encoder #'encode-value))))
 
-(defmethod bson-encode( (key string) (value array) &key (array nil array-supplied-p) 
-		       (size 10 size-supplied-p) 
-		       (type +bson-data-object+) (encoder nil))
-  (let* ((size (if size-supplied-p size 10))
-	 (array (if array-supplied-p array (make-octet-vector size))))
+
+(defmethod bson-encode ( (key string) (value (eql nil))  &key (array nil) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
+    (labels ((encode-value (array)
+	       (add-octets (byte-to-octet (bool-to-byte value)) array)))    ; add value
+      (call-next-method key value :array array :type +bson-data-boolean+ :encoder #'encode-value))))
+
+;
+; nil is the opposite of t, and is already mapped as a boolean. Also, there a seperate encoder
+; for symbols, so something like the below won't work (and propably doesn't need to )
+
+;(defmethod bson-encode ( (key string) (value (eql 'void))  &key (array nil) )
+;  (let ((array (or array (make-octet-vector +default-array-size+))))
+;    (labels ((encode-value (array)
+;	       array))
+;      (call-next-method key value :array array :type +bson-data-null+ :encoder #'encode-value))))
+
+;
+; The array type is the parent class of other types like string. So see if a type and encoder is
+; passed in and pass it along..
+(defmethod bson-encode( (key string) (value array) &key (array nil) (type nil) (encoder nil) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
     (labels ((encode-value (array)
 	       (add-octets value array)))    ; add value
-      (call-next-method key value :array array :type type :encoder (if encoder encoder #'encode-value)))))
+      (call-next-method key value :array array :type (or type +bson-data-object+) 
+			:encoder (or encoder #'encode-value)))))
 
 
-(defmethod bson-encode ( (key string) (value bson-oid) &key (array nil array-supplied-p) (size 10 size-supplied-p) 
-			(type +bson-data-oid+) (encoder nil) )
-  (let* ((size (if size-supplied-p size 10))
-	 (array (if array-supplied-p array (make-octet-vector size))))
+(defmethod bson-encode ( (key string) (value bson-oid) &key (array nil) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
     (labels ((encode-value (array)
 	       (add-octets (_id value) array))) ; twelf byte oid
-      (call-next-method key value :array array :type type :encoder (if encoder encoder #'encode-value)))))
-
-
-;;(defgeneric bson-encode-document (document)   
-;;  (:documentation "encode a document"))
-
-;;(defmethod bson-encode-document ( (document array) )
-;;  document)
-
-;;(defmethod bson-encode-document ( (document document) )
-;;  (setf (gethash "_id" (elements document)) (_id document))
-;;  (bson-encode-ht (elements document) ))
-
-;; Something like this SHOULD be made to work !
-;; The issue is that bson-encode returns 
-;;  (bson-encode-ht (elements document) :array (bson-encode "_id" (_id document))))
+      (call-next-method key value :array array :type +bson-data-oid+ :encoder #'encode-value))))
 
 
 
-(defgeneric bson-type-extract (code array) 
+(defgeneric bson-decode (code array) 
   (:documentation "return data and the remaining array"))
 
-(defmethod bson-type-extract (code array)
+(defmethod bson-decode ( (code t) (array t) )
   (format t "~% code : ~A ~%" code)
   (format t "~% array : ~A ~% " array)
   (values array (make-octet-vector 1 :init-fill 1)))
 
-(defmethod bson-type-extract ( (code (eql +bson-data-number+)) array)
+(defmethod bson-decode ( (code (eql +bson-data-number+)) array)
   (values (decode-double-float-bits (octet-to-int64 (subseq array 0 8))) (subseq array 8)))
  
-(defmethod bson-type-extract ( (code (eql +bson-data-string+)) array)
+(defmethod bson-decode ( (code (eql +bson-data-string+)) array)
   (let* ((size (octet-to-int32 (subseq array 0 4)))
 	 (str  (null-terminated-octet-to-string (subseq array 4 (+ 4 size)) size))
 	 (rest (subseq array (+ 4 size))))
     (values str rest)))
 
-(defmethod bson-type-extract ( (code (eql +bson-data-oid+)) array)
+
+(defmethod bson-decode ( (code (eql +bson-data-symbol+)) array)
+  (multiple-value-bind (str rest) (bson-decode +bson-data-string+ array)
+    (values (intern str) rest)))
+
+(defmethod bson-decode ( (code (eql +bson-data-oid+)) array)
   (values (make-bson-oid :oid (subseq array 0 12)) (subseq array 12)))
 
-(defmethod bson-type-extract ( (code (eql +bson-data-boolean+)) array)
+(defmethod bson-decode ( (code (eql +bson-data-boolean+)) array)
   (values (byte-to-bool (octet-to-byte (subseq array 0 1))) (subseq array 1)))
 
-(defmethod bson-type-extract ( (code (eql +bson-data-int32+)) array)
+(defmethod bson-decode ( (code (eql +bson-data-int32+)) array)
   (values (octet-to-int32 (subseq array 0 4)) (subseq array 4)))
 
-(defmethod bson-type-extract ( (code (eql +bson-data-long+)) array)
+(defmethod bson-decode ( (code (eql +bson-data-long+)) array)
   (values (octet-to-int64 (subseq array 0 8)) (subseq array 8)))
+
+(defmethod bson-decode ( (code (eql +bson-data-null+)) array)
+  (values nil array))
+
+(defmethod bson-decode ( (code (eql +bson-data-date+)) array)
+  (values (make-bson-time (octet-to-uint64 (subseq array 0 8))) (subseq array 8)))
+
 
 #|
   Compound Types : arrays, objects 
@@ -183,7 +195,7 @@
 	       (eos      (1+ (position 0  (subseq array 1))))
 	       (key      (null-terminated-octet-to-string (subseq array 1 (+ 1 eos)) eos))
 	       (buffer   (subseq array (+ 1 eos))))
-	  (multiple-value-bind (value rest)  (bson-type-extract obj-type buffer) 
+	  (multiple-value-bind (value rest)  (bson-decode obj-type buffer) 
 	    (extract-elements rest (cons (list obj-type key value ) accum)))))))
 
 (defun to-element (array) 
@@ -215,28 +227,27 @@
 	 (rest     (subseq array (+ 1 eos))))
     (values obj-type key rest)))
 
-
 (defun array@end (array) 
   (if (array@eoo array)
       0
       (length array)))
 
 ;;this is the same as the 'main' extraction routine to-elements above; so the two should merge..
-(defmethod bson-type-extract ( (code (eql +bson-data-object+)) array)
+(defmethod bson-decode ( (code (eql +bson-data-object+)) array)
   (let*  ((accum ())
 	  (array-size   (octet-to-int32 (subseq array 0 4) ))
 	  (array-buffer (subseq array 4 array-size))
 	  (rest         (subseq array array-size)))
     (do () ((zerop (array@end array-buffer) ))
       (multiple-value-bind (type key rest) (code-key-rest array-buffer)    
-	(multiple-value-bind (value remainder) (bson-type-extract type rest)
+	(multiple-value-bind (value remainder) (bson-decode type rest)
 	  (setf array-buffer remainder)
 	  (push (list type key value) accum))))
     (let ((ht (make-hash-table :test 'equal)))
       (mapcar (lambda (x) (setf (gethash (car x) ht) (cadr x)))  (mapcar #'cdr accum))
       (values (ht->document ht) rest))))
 
-(defmethod bson-type-extract ( (code (eql +bson-data-array+)) array)
+(defmethod bson-decode ( (code (eql +bson-data-array+)) array)
   (let* ((accum ())
 	 (array-size   (octet-to-int32 (subseq array 0 4) ))
 	 (array-buffer (subseq array 4 array-size))
@@ -244,7 +255,7 @@
     (do () ((zerop (array@end array-buffer) ))
       (multiple-value-bind (type key rest) (code-key-rest array-buffer)    
 	(declare (ignore key))
-	(multiple-value-bind (value remainder) (bson-type-extract type rest)
+	(multiple-value-bind (value remainder) (bson-decode type rest)
 	  (setf array-buffer remainder)
 	  ;(push (list key value) accum))))
 	  (push value accum))))
