@@ -89,14 +89,14 @@
       nil))
 
 
-(defgeneric db.use ( db &optional mongo )
+(defgeneric db.use ( db &key )
   (:documentation "use a specific db"))
 
-(defmethod db.use ( (db string) &optional (mongo nil) )
+(defmethod db.use ( (db string) &key (host "localhost") (port +MONGO-PORT+))
   (push db *db.use-history*)
-  (setf (db (or mongo (mongo))) db))
+  (setf (db (mongo :host host :port port)) db))
 
-(defmethod db.use ( (db cons)  &optional (mongo nil) )
+(defmethod db.use ( (db cons)  &key)
   (when (eql db -)
     (progn
       (push (cadr *db.use-history*) *db.use-history*)
