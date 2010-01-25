@@ -99,6 +99,26 @@ Insert document into the database.
 
 Print the current contents.
 
+      (defvar *DOC* (cadr (docs (db.find "foo" 'all))))`
+      (add-element "tags" (list 'good 'bad 'ugly) *DOC*)
+      (db.save "foo" *DOC*)
+      (pp (db.find "foo" 'all))
+
+      {
+	"_id" -> objectid(4B5CF28970DFF196A75FE1F0)
+      	"document"  ->  one
+      }
+
+      {
+        "_id" -> objectid(8B508D5CBB5D451D961F046D)
+      	"tags"  -> [ GOOD, BAD, UGLY,]
+     	"tag"  ->  key
+     	"array"  -> [ 1, 2, 3, hello,]
+      }
+
+Bind variable `\*DOC\*` to the second document returned by the find command, add an other element 
+and save back to the collection.
+
 ## Commands
 
 ## What's missing
