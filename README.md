@@ -116,6 +116,21 @@ and save back to the collection.
      	"array"  -> [ 1, 2, 3, hello,]
       }
 
+Check the status of the server.
+
+      (db.use "admin")
+      (nd (db.run-command 'serverstatus))
+
+        "ok"  ->  1.0d0
+	  "mem"  -> 
+	    "mapped"  ->  80
+	    "virtual"  ->  177
+            "resident"  ->  3
+        "globalLock"  -> 
+          "ratio"  ->  4.644753171959394d-5
+          "lockTime"  ->  6493354.0d0
+        "totalTime"  ->  1.39799764586d11
+        "uptime"  ->  139799.0d0
 
 
 ## Commands
