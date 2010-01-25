@@ -9,7 +9,7 @@
   :author "Fons Haffmans; fons.haffmans@gmail.com"
   :version "0.0.1"
   :licence "MIT"
-  :description "lisp system to interact with mongo, a no-sql db"
+  :description "lisp system to interact with mongo, a non-sql db"
   :depends-on (:uuid
 	       :babel
 	       :usocket)
