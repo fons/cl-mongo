@@ -28,9 +28,76 @@ Use asdf to install cl-mongo.
 
 `(use-package :cl-mongo)`
 
+
 `(db.use "test")`
 
 This connects to the test database on the local mongo server listening on its default port.
+
+`(db.insert "foo" (kv "document" "one") )`
+
+Insert a key-value pair as the first document into collection "foo".
+
+    (pp (iter (db.find "foo" 'all)))`
+
+     {
+        "_id" -> objectid(4B5CF28970DFF196A75FE1F0)
+        "document"  ->  one
+     }
+
+Pretty-print the documents returned by the find command. iter will ensure that the cursor is
+fully iterated over.
+
+
+`(defvar *DOC* (make-document))`
+
+Create a document. A document is collection of key-value pairs and a unique identifier called "_id".
+
+       (add-element "tag" "key" *DOC*)`
+
+
+       {  DOCUMENT 
+
+       {
+       tag  -> key 
+       }
+       }
+
+
+    (add-element "array" (list 1 2 3 "hello") *DOC*)
+
+    {  DOCUMENT 
+
+    {
+    tag  -> key 
+    	 1 
+    	 2 
+    	 3 
+    	 hello 
+  	 array  -> NIL 
+	 }
+     }
+
+
+Add various elements to the document.
+
+`(db.insert "foo" *DOC*)`
+
+Insert document into the database.
+
+       (pp (iter (db.find "foo" 'all)))
+
+       {
+       "_id" -> objectid(4B5CF28970DFF196A75FE1F0)
+       "document"  ->  one
+       }
+
+       {
+       "_id" -> objectid(8B508D5CBB5D451D961F046D)
+       "array"  -> [ 1, 2, 3, hello,]
+       "tag"  ->  key
+       }
+
+Print the current contents.
 
 ## Commands
 

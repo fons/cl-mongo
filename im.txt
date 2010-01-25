@@ -1,0 +1,125 @@
+; SLIME 2009-11-13
+CL-USER> (require 'cl-mongo)
+; loading system definition from /home/fons/.sbcl/systems/usocket.asd into
+; #<PACKAGE "ASDF0">
+; registering #<SYSTEM USOCKET {1002F039F1}> as USOCKET
+; loading system definition from
+; /home/fons/.sbcl/systems/split-sequence.asd into #<PACKAGE "ASDF0">
+; registering #<SYSTEM :SPLIT-SEQUENCE {10031BABB1}> as SPLIT-SEQUENCE
+; loading system definition from /home/fons/.sbcl/systems/babel.asd into
+; #<PACKAGE "ASDF0">
+; registering #<SYSTEM BABEL {1003476A01}> as BABEL
+; loading system definition from /home/fons/.sbcl/systems/alexandria.asd
+; into #<PACKAGE "ASDF0">
+; registering #<SYSTEM :ALEXANDRIA {1002AD38A1}> as ALEXANDRIA
+; loading system definition from
+; /home/fons/.sbcl/systems/trivial-features.asd into #<PACKAGE "ASDF0">
+; registering #<SYSTEM TRIVIAL-FEATURES {1002EC8CF1}> as TRIVIAL-FEATURES
+; loading system definition from /home/fons/.sbcl/systems/uuid.asd into
+; #<PACKAGE "ASDF0">
+; registering #<SYSTEM UUID {1003251A41}> as UUID
+; loading system definition from /home/fons/.sbcl/systems/ironclad.asd
+; into #<PACKAGE "ASDF0">
+; registering #<SYSTEM :IRONCLAD {10038669E1}> as IRONCLAD
+; registering #<SYSTEM IRONCLAD-TESTS {10039296D1}> as IRONCLAD-TESTS
+; loading system definition from
+; /usr/lib/sbcl/sb-rotate-byte/sb-rotate-byte.asd into #<PACKAGE "ASDF0">
+; registering #<SYSTEM SB-ROTATE-BYTE {1003306B71}> as SB-ROTATE-BYTE
+("SB-ROTATE-BYTE" "IRONCLAD")
+CL-USER> (in-package :cl-mongo)
+#<PACKAGE "CL-MONGO">
+CL-MONGO> (db.use "test")"test"
+CL-MONGO> (db.find "foo" 'all)
+((36 1222446079 0 1 0 0 0 0 "foo") NIL)
+CL-MONGO> (pp (db.find "foo" 'all))
+NIL
+CL-MONGO> (pp (iter (db.find "foo" 'all)))
+NIL
+#<PACKAGE "CL-MONGO">
+CL-MONGO> (db.use "test")"test"
+CL-MONGO> (db.find "foo" 'all)
+((36 1222446079 0 1 0 0 0 0 "foo") NIL)
+CL-MONGO> (pp (db.find "foo" 'all))
+NIL
+CL-MONGO> (pp (iter (db.find "foo" 'all)))
+NIL
+CL-MONGO> (db.insert "foo" (kv "document" "one") )
+NIL
+CL-MONGO> (pp (iter (db.find "foo" 'all)))
+
+{
+  "_id" -> objectid(4B5CF28970DFF196A75FE1F0)
+  "document"  ->  one
+}
+NILCL-MONGO> (pp (iter (db.find "foo" 'all)))
+NIL
+CL-MONGO> (db.insert "foo" (kv "document" "one") )
+NIL
+CL-MONGO> (pp (iter (db.find "foo" 'all)))
+
+{
+  "_id" -> objectid(4B5CF28970DFF196A75FE1F0)
+  "document"  ->  one
+}
+NIL
+CL-MONGO> NIL "test"
+"test"
+CL-MONGO> "test"
+"test"
+CL-MONGO> 
+; No value
+CL-MONGO> 
+; No value
+CL-MONGO> 
+; No value
+CL-MONGO> NIL
+NIL
+CL-MONGO> (make-document)
+
+{  DOCUMENT 
+
+{
+}
+}
+
+CL-MONGO> (defvar *DOC* (make-document))
+*DOC*
+CL-MONGO> (add-element "tag" "key" *DOC*)
+
+{  DOCUMENT 
+
+{
+  tag  -> key 
+}
+}
+
+CL-MONGO> (add-element "array" (list 1 2 3 "hello") *DOC*)
+
+{  DOCUMENT 
+
+{
+  tag  -> key 
+    1 
+    2 
+    3 
+    hello 
+  array  -> NIL 
+}
+}
+
+CL-MONGO> (db.insert "foo" *DOC*)
+NIL
+CL-MONGO> (pp (iter (db.find "foo" 'all)))
+
+{
+  "_id" -> objectid(4B5CF28970DFF196A75FE1F0)
+  "document"  ->  one
+}
+
+{
+  "_id" -> objectid(8B508D5CBB5D451D961F046D)
+  "array"  -> [ 1, 2, 3, hello,]
+  "tag"  ->  key
+}
+NIL
+CL-MONGO> 
