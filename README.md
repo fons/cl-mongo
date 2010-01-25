@@ -20,6 +20,10 @@ It also supports indexing.
 I developed this using sbcl. I didn't rely on any sbcl extenxions so I expect this to run under 
 other lisps as well.
 
+## Version
+
+   Version 0.1.1
+
 ## Installation
 
 Use asdf to install cl-mongo. 
