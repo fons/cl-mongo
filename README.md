@@ -25,17 +25,17 @@ other lisps as well.
 Use asdf to install cl-mongo. 
 
 ## A sample session
-
-`(use-package :cl-mongo)`
-
-
-`(db.use "test")`
-
 This connects to the test database on the local mongo server listening on its default port.
+
+    (use-package :cl-mongo)
+    (db.use "test")
+
+Insert a key-value pair as the first document into collection "foo".
 
 `(db.insert "foo" (kv "document" "one") )`
 
-Insert a key-value pair as the first document into collection "foo".
+Pretty-print the documents returned by the find command. iter will ensure that the cursor is
+fully iterated over.
 
     (pp (iter (db.find "foo" 'all)))`
 
@@ -44,13 +44,11 @@ Insert a key-value pair as the first document into collection "foo".
         "document"  ->  one
      }
 
-Pretty-print the documents returned by the find command. iter will ensure that the cursor is
-fully iterated over.
-
+Create a document. A document is collection of key-value pairs and a unique identifier called "_id".
 
 `(defvar *DOC* (make-document))`
 
-Create a document. A document is collection of key-value pairs and a unique identifier called "_id".
+Add various elements to the document.
 
        (add-element "tag" "key" *DOC*)`
 
@@ -78,11 +76,11 @@ Create a document. A document is collection of key-value pairs and a unique iden
      }
 
 
-Add various elements to the document.
+Insert document into the database.
 
 `(db.insert "foo" *DOC*)`
 
-Insert document into the database.
+Print the current contents.
 
        (pp (iter (db.find "foo" 'all)))
 
@@ -97,7 +95,9 @@ Insert document into the database.
        "tag"  ->  key
        }
 
-Print the current contents.
+
+Bind variable `*DOC*` to the second document returned by the find command, add an other element 
+and save back to the collection.
 
       (defvar *DOC* (cadr (docs (db.find "foo" 'all))))`
       (add-element "tags" (list 'good 'bad 'ugly) *DOC*)
@@ -116,8 +116,7 @@ Print the current contents.
      	"array"  -> [ 1, 2, 3, hello,]
       }
 
-Bind variable `\*DOC\*` to the second document returned by the find command, add an other element 
-and save back to the collection.
+
 
 ## Commands
 
