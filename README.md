@@ -147,6 +147,7 @@ Document class.
 A document consists of key/value pairs stored in a hash table.
 Each document has a unique id.   
 Accessors :    
+
 * elements  : returns the hash table.
 * _id       : returns the unique id.
 * _local_id : true id the document is locally generated.
