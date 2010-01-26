@@ -236,6 +236,8 @@ Stop iteration and return the list of documents returned by the query.
 
 `(defun now()`
 
+### CRUD support
+
 Return the current date and time in bson format.
 
 `(defgeneric db.insert ( collection document &key )`
