@@ -14,17 +14,6 @@
     (mongo-message mongo (mongo-insert (full-collection-name mongo collection) 
 				       (bson-encode-container document)) :timeout 0)))
 
-;(defmethod db.insert ( (collection string) (document hash-table) &key (mongo nil) )
-;  (call-next-method collection (bson-encode-container document) :mongo mongo))
-
-;(defmethod db.insert ( (collection string) (document document) &key (mongo nil) )
-;  (call-next-method collection (bson-encode-container document) :mongo mongo))
-
-;(defmethod db.insert ( (collection string) (kv pair) &key (mongo nil) )
-;  (call-next-method collection (bson-encode-container kv  ) :mongo mongo))
-
-;(defmethod db.insert ( (collection string) (kv hash-table) &key (mongo nil) )
-;  (call-next-method collection (bson-encode-container kv) :mongo mongo))
 
 (defgeneric db.find (collection  kv &key)
   (:documentation "find a document in the db collection"))

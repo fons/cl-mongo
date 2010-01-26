@@ -18,6 +18,9 @@
     (db.stop iterator :mongo mongo)
     (db.delete collection docs)))
 
+(defgeneric pp (result &key)
+  (:documentation "pretty-printer for the command shell"))
+
 (defmethod pp ( (result (eql nil) ) &key )
   nil)
 
