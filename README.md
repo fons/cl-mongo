@@ -253,23 +253,57 @@ The document can be one of :
 Find documents in the collection using the selector specified by kv.  
 Keywords :
 
-* :limit : Max number of documents returned in this query
+* :limit : Max number of documents returned in this query. The default is 1.
+* :skip  : Number of documents to skip in this query.
+
+The default value of the limit is one, so db.find by default is the equivalant of *findOne* in the
+mongo documentation.
+
+`(defgeneric db.update ( collection selector new-document &key )`
+
+In a collection update the document(s) identified by the selector statement.  
+This method has the following keywords :
+
+* :upsert : If t insert the document if the document cannot be found in the collection.
+* :multi  : Update all documents identified by the selector.
+
+`(defgeneric db.save ( collection document &key)`
+
+Save a document to the collection. If the document has a unique "_id" value (i.e. if it's generated
+by `(make-document)` ) it will be *upserted*.  
+If it's a hash table or a kv set, it will be inserted.  
+In other words this a a helper-function build around *db.insert* and *db.update*.
+
+`(defgeneric db.delete ( collection object &key )`
+
+Delete a document from a collection. The *document* field is used to identify the document to
+be deleted.  
+You can enter a list of documents. In that the server will be contacted to delete each one of these.
+It may be more efficient to run a delete script on he server side.
+
+#### iteration support
 
 
-   :db.update
-   :db.save
 
-   :db.delete
 
-   :db.next
-   :db.iter
-   :db.stop
+`(defun db.iterator ( result )`  
+Returns the iterator from the result set.
 
+`(defgeneric db.next ( collection cursor-id &key )`  
+
+Executes the next call on the iterator identified by cursor-id.
+
+`(defgeneric db.stop ( cursor &key mongo )`  
+
+Stop iteration and clean up the iterator on the server. This makes a server call.
+
+#### index support
 
    :db.ensure-index
    :db.indexes
 
    :db.run-command
+
 
    :db.collections
    :db.count
