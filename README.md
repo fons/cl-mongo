@@ -145,8 +145,7 @@ Check the status of the server.
 
 Document class. 
 A document consists of key/value pairs stored in a hash table.
-Each document has a unique id.
-
+Each document has a unique id.   
 Accessors : 
 
 * elements  : returns the hash table.
