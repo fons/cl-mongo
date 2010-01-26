@@ -180,13 +180,10 @@ This is intended to be a helper function for key-value pairs and sets of
 
 key-value pairs.
 
-pair  -> (string value)
-
-value -> atom | cons 
-
-kv    -> pair | list
-
-list  -> (elem list) | nil
+pair  -> (string value)  
+value -> atom | cons  
+kv    -> pair | list  
+list  -> (elem list) | nil  
 
 
 ### Connection managment
