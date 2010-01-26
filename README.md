@@ -176,9 +176,7 @@ Convert a hash-table to a document.
 
 `(defgeneric kv (a b &rest rest) )`
 
-This is intended to be a helper function for key-value pairs and sets of 
-
-key-value pairs.
+This is intended to be a helper function for key-value pairs and sets of key-value pairs.  
 
 pair  -> (string value)  
 value -> atom | cons  
