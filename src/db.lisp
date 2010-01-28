@@ -53,6 +53,7 @@
   (call-next-method collection (bson-encode-container kv)
 		    :mongo mongo :options options :skip skip :limit limit :selector selector ))
 
+
 (defgeneric db.update ( collection selector new-document &key )
   (:documentation "find a document and replace it with a new version"))
 
@@ -86,6 +87,7 @@
     (cond ( (headerp result)      (values (nth 5 result)       (car (last result))       nil)          )
 	  ( (header+docsp result) (values (nth 5 (car result)) (car (last (car result))) (cadr result)) )
 	  ( t                     (values 0 nil nil)))) ;stop iteration
+
 
 (defgeneric db.next ( collection cursor-id &key ) 
   (:documentation "next iteration of the mongo db cursor"))
@@ -164,27 +166,65 @@
 ; asc -> t | nil
 ; keys -> (list key)
 ;
-(defmethod db.ensure-index ( (collection string) (keys cons) &key (mongo nil)  (unique nil) )
+
+(defgeneric db.ensure-index (collection keys &key)
+  (:documentation "create an index specified by the keys in a collection"))
+
+;;
+;; A lot of this 'formatting' has to do with the way the indexes are set up
+;; through the java script client. Apperently 1/-1 -> coneverted to float, rather
+;; than an integer. This may or may not matter..
+;;
+	    
+(defun asc/desc->+1/-1 (ht)
+  (let ((new-ht (make-hash-table :test 'equal)))
+    (labels ((conv (value) 
+	       (cond ( (eql value 'asc)  1)
+		     ( (eql value 'desc) -1)
+		     (t                  value))))
+      (with-hash-table-iterator (iterator ht)
+	(dotimes (repeat (hash-table-count ht))
+	  (multiple-value-bind (exists-p key value) (iterator)
+	    (when exists-p (setf (gethash key new-ht) (conv value)))))))
+    new-ht))
+	    
+
+(defmethod db.ensure-index ( (collection string) (index hash-table) &key (mongo nil)  (unique nil) )
   (assert (typep unique 'boolean))
-  (let ((mongo (or mongo (mongo))))
-    (labels ((keys->ht (keys) 
-	       (if (null (cdr keys) ) ;list of length 1
-		   (kv->ht (car keys))
-		   (kv->ht keys)))
-	     (keys->name (keys)
-	       (format nil "~{~{~a~^_~}~^_~}" keys)))
-    (db.insert "system.indexes" 
-	       (kv->ht (kv (kv "ns"   (full-collection-name mongo collection) ) 
-			   (kv "key"  (keys->ht keys) )
-			   (when unique (kv "unique" unique))
-			   (kv "name" (keys->name keys) ) ))))))
+  (let ((mongo (or mongo (mongo)))
+	(index (asc/desc->+1/-1 index)))
+    (labels ((ht->list (ht)
+	       (let ((lst ()))
+		 (with-hash-table-iterator (iterator ht)
+		   (dotimes (repeat (hash-table-count ht))
+		     (multiple-value-bind (exists-p key value) (iterator)
+		       (if exists-p (push (list key (floor value)) lst)))))
+		 lst))
+	       ;------------------------------------------------------------------
+	     (force-float (ht)
+	       (let ((new-ht (make-hash-table :test 'equal)))
+		 (with-hash-table-iterator (iterator ht)
+		   (dotimes (repeat (hash-table-count ht))
+		     (multiple-value-bind (exists-p key value) (iterator)
+		       (when exists-p (setf (gethash key new-ht) (float value))))))
+		 new-ht))
+	     ;----------------------------------------------------------------------
+	     (keys->name (k)
+	       (format nil "~{~{~a~^_~}~^_~}" k)))
+      (db.insert "system.indexes" 
+		 (kv (kv "ns"   (full-collection-name mongo collection) )
+		     (kv "key"  (force-float index) )
+		     (when unique (kv "unique" unique))
+		     (kv "name" (keys->name (ht->list index))))))))
 
 (defmethod db.ensure-index ( (collection string) (key string) &key (mongo nil)  (unique nil) (asc t) )
   (let ((mongo    (or mongo (mongo)))
-	(order-id (if asc 1.0 -1.0)))
-    (db.ensure-index collection (list (list key order-id) ) :mongo mongo :unique unique)))
+	(order-id (if asc 1 -1))) 
+    (db.ensure-index collection (kv->ht (kv key order-id)) :mongo mongo :unique unique)))
 
-
+(defmethod db.ensure-index ( (collection string) (key pair) &key (mongo nil)  (unique nil) )
+  (let (( asc (if (eql -1 (pair-value key)) nil t)))
+    (db.ensure-index collection (pair-key key) :mongo mongo :unique unique :asc asc)))
 
 (defgeneric db.run-command ( cmd &key )
   (:documentation "run a command on the db.."))
@@ -214,16 +254,19 @@
 
 |#
 
+
 (defmethod db.indexes (&key (mongo nil) )
   (db.find "system.indexes" 'all :mongo mongo))
 
 (defmethod db.collections (&key (mongo nil) )
-  (db.find "system.namespaces" 1000 :mongo mongo))
+  (db.find "system.namespaces" 0 :mongo mongo))
 
 (defmethod db.run-command ( (cmd (eql 'deleteindexes) ) &key (mongo nil) (collection nil) (index "*") )
   (assert (not (null collection)))
   (db.find "$cmd" (kv->ht (kv (kv "deleteIndexes" collection) (kv "index" index))) :mongo mongo))
 
+(defgeneric db.count ( collection selector &key )
+  (:documentation "count all the collections satifying the criterion set by the selector"))
 
 (defmethod db.count ( (collection t) (selector t) &key (mongo nil) )
   (db.find "$cmd" (kv (kv "count" collection) (kv "query" selector) (kv "fields" nil)) :mongo mongo :limit 1))

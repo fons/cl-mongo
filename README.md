@@ -230,15 +230,23 @@ way of deleting documents as it invloves multiple trips to the server.
 Mongo allows for execution of java-script on the server side, but support for
 this hasn't been added to cl-mongo *yet*.
 
-`(defun docs ( result )`
+`(defun docs ( result )`  
 
 Stop iteration and return the list of documents returned by the query.
 
-`(defun now()`
+`(defun now()`  
+Return the current date and time in bson format.  
 
-### CRUD support
+`(defmethod db.collections (&key (mongo nil) )`  
 
-Return the current date and time in bson format.
+Show all the collections in the current database.
+
+`(defgeneric db.count ( collection selector &key )`  
+
+Count the number of documents satifying the selector. 'all can be used to return a count of
+all the documents in the collection.
+
+### CRUD Operations
 
 `(defgeneric db.insert ( collection document &key )`
 
@@ -283,39 +291,39 @@ be deleted.
 You can enter a list of documents. In that the server will be contacted to delete each one of these.
 It may be more efficient to run a delete script on he server side.
 
-#### iteration support
+`(defun date-time (second minute hour day month year &optional (time-zone *bt-time-zone*) )`  
 
+Generate a time stamp the mongo/bson protocol understands.
 
+`(defun time-zone ()`  
+Set the time zone appropriate for the current environment.
 
+### Iteration Support
 
 `(defun db.iterator ( result )`  
 Returns the iterator from the result set.
 
 `(defgeneric db.next ( collection cursor-id &key )`  
-
 Executes the next call on the iterator identified by cursor-id.
 
 `(defgeneric db.stop ( cursor &key mongo )`  
+Stop iterating and clean up the iterator on the server by making a server call.
 
-Stop iteration and clean up the iterator on the server. This makes a server call.
+### Index Support
 
-#### index support
+`(defgeneric db.ensure-index (collection keys &key)`  
 
-   :db.ensure-index
-   :db.indexes
+Create an index for a collection.
 
-   :db.run-command
+`(defmethod db.indexes (&key (mongo nil) )`  
 
+Return all indexes in the database.
 
-   :db.collections
-   :db.count
+### Database Commands
 
-   :time-zone
-   :date-time
+`(defgeneric db.run-command ( cmd &key )`  
 
-   ;; shell commands
-
-
-
+Run a database command on the server. See the mongo documentation for a list of commands.  
+For most commands you can just uses the key-value shown in the mongo documentation.
 
 ## What's missing

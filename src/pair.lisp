@@ -45,6 +45,25 @@
       (setf (gethash (pair-key el) ht) (pair-value el)))
     ht))
 
+;this allows for (kv (kv "a" b) nil ("l" k) ) where
+; the nil maybe the result of some test. it's skipped..
+(defmethod kv ( (a pair) (b pair) &rest rest)
+  (let ((ht (make-hash-table :test 'equal)))
+    (setf (gethash (pair-key a) ht) (pair-value a))
+    (setf (gethash (pair-key b) ht) (pair-value b))
+    (dolist (el rest)
+      (when el (setf (gethash (pair-key el) ht) (pair-value el))))
+    ht))
+
+;this adds more kv's to an existing container..
+;I don't check the type of the rest variables, 
+;assuming they're all pairs..
+(defmethod kv ( (ht hash-table) (b pair) &rest rest )
+  (setf (gethash (pair-key b) ht) (pair-value b))
+  (dolist (el rest)
+    (setf (gethash (pair-key el) ht) (pair-value el)))
+  ht)
+
 (defun bson-encode-pair ( kv )
   (bson-encode (pair-key kv) (pair-value kv)))
 

@@ -17,9 +17,7 @@
   :components 
   ((:module "src"
     :serial t
-    :components ((:static-file "COPYING")
-		 (:static-file "README.md")
-		 (:file "packages")
+    :components ((:file "packages")
 		 (:file "octets")
 		 (:file "encode-float")
 		 (:file "bson-oid")
@@ -31,8 +29,10 @@
 		 (:file "protocol")
 		 (:file "mongo")
 		 (:file "db")
-		 (:file "shell")
-		 ))))
+		 (:file "shell")))
+   (:static-file "README.md")
+   (:static-file "COPYING")))
+
 
 
 

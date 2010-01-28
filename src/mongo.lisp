@@ -100,7 +100,7 @@
   (when (eql db -)
     (progn
       (push (cadr *db.use-history*) *db.use-history*)
-      (setf (db (or mongo (mongo))) (car *db.use-history*)))))
+      (setf (db (mongo) ) (car *db.use-history*)))))
 
 
 
