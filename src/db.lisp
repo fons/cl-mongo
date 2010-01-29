@@ -238,14 +238,24 @@
 (defmethod db.run-command ( (cmd symbol) &key (mongo nil) (arg 1) )
   (db.run-command (string-downcase cmd) :mongo mongo :arg arg))
 
+(defmethod db.run-command ( (cmd string) &key (mongo nil) (arg 1) )
+  (db.find "$cmd" (kv cmd arg) :limit 1 :mongo mongo))
+
+;does this actually work ? s/b there according to the documentation...
+(defmethod db.run-command ( (cmd (eql 'querytracelevel)) &key (mongo nil) (arg 1) )
+  (db.run-command "queryTraceLevel" :mongo mongo :arg arg))
+
 (defmethod db.run-command ( (cmd (eql 'listdatabases) ) &key (mongo nil) )
   (db.run-command "listDatabases" :mongo mongo))
 
 (defmethod db.run-command ( (cmd (eql 'serverstatus) ) &key (mongo nil) )
   (db.run-command "serverStatus" :mongo mongo))
 
-(defmethod db.run-command ( (cmd string) &key (mongo nil) (arg 1) )
-  (db.find "$cmd" (kv cmd arg) :limit 1 :mongo mongo))
+(defmethod db.run-command ( (cmd (eql 'deleteindexes) ) &key (mongo nil) (collection nil) (index "*") )
+  (assert (not (null collection)))
+  (db.find "$cmd" (kv->ht (kv (kv "deleteIndexes" collection) (kv "index" index))) :mongo mongo))
+
+
 
 #|
    
@@ -260,10 +270,6 @@
 
 (defmethod db.collections (&key (mongo nil) )
   (db.find "system.namespaces" 0 :mongo mongo))
-
-(defmethod db.run-command ( (cmd (eql 'deleteindexes) ) &key (mongo nil) (collection nil) (index "*") )
-  (assert (not (null collection)))
-  (db.find "$cmd" (kv->ht (kv (kv "deleteIndexes" collection) (kv "index" index))) :mongo mongo))
 
 (defgeneric db.count ( collection selector &key )
   (:documentation "count all the collections satifying the criterion set by the selector"))

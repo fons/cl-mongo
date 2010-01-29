@@ -17,13 +17,17 @@ gridfs among other things.
 In its current state cl-mongo provides the ability to insert, update and delete documents.
 It also supports indexing.
 
-I developed this using sbcl. I didn't rely on any sbcl extenxions so I expect this to run under 
+I developed this using *sbcl*. I didn't rely on any sbcl extenxions so I expect this to run under 
 other lisps as well.
 
 ## Version
 
    Version 0.1.1
 
+   This version is basically an alpha release. Many features are and testing has not been
+   tested extensively.
+
+   
 ## Installation
 
 Use asdf to install cl-mongo. 
@@ -327,3 +331,15 @@ Run a database command on the server. See the mongo documentation for a list of 
 For most commands you can just uses the key-value shown in the mongo documentation.
 
 ## What's missing
+
+At least the following is missing :  
+
+* Request id/ Response id are left 0 in the header.
+* Serialization of binary data.
+* Serialization of regular expressions.
+* Serialization of code with and without scope.
+* Authentication
+* GridFS
+* ......
+
+
