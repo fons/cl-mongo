@@ -337,7 +337,9 @@ At least the following is missing :
 * Request id/ Response id are left 0 in the header.
 * Serialization of binary data.
 * Serialization of regular expressions.
-* Serialization of code with and without scope.
+* Serialization of code with and without scope (i.e support for server-side code execution) .
+* Advanced queries like min/max queries, group by, snapshot support.
+* Aggregation except for distinct and group by.
 * Authentication
 * GridFS
 * ......

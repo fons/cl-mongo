@@ -10,9 +10,14 @@
 (defconstant +bson-data-boolean+  8   "bson boolean encoding")
 (defconstant +bson-data-date+     9   "bson date encoding")
 (defconstant +bson-data-null+     10  "bson null encoding")
-(defconstant +bson-data-symbol+   14  "bson symbol encoding")
 (defconstant +bson-data-int32+    16  "bson 32 bit int encoding")
 (defconstant +bson-data-long+     18  "bson 64 bit int encoding")
+
+#|
+support for data-symbol was removed b/c in the current implementation it
+clashed with the encoding for booleans..
+|#
+;(defconstant +bson-data-symbol+   14  "bson symbol encoding")
 
 #|
   bson-encode encodes a complete bson object.
@@ -62,8 +67,8 @@
 	       (add-octets (string-to-null-terminated-octet value) array))) ; value string, null terminated
       (call-next-method key value :array array :type type :encoder #'encode-value))))
 
-(defmethod bson-encode ( (key string) (value symbol) &key (array nil) )
-  (bson-encode key (string value) :array array :type +bson-data-symbol+ ))
+;(defmethod bson-encode ( (key string) (value symbol) &key (array nil) )
+;  (bson-encode key (string value) :array array :type +bson-data-symbol+ ))
 
 (defmethod bson-encode( (key string) (value integer) &key (array nil)) 
   (let ((array (or array (make-octet-vector +default-array-size+))))
@@ -154,9 +159,9 @@
     (values str rest)))
 
 
-(defmethod bson-decode ( (code (eql +bson-data-symbol+)) array)
-  (multiple-value-bind (str rest) (bson-decode +bson-data-string+ array)
-    (values (intern str) rest)))
+;(defmethod bson-decode ( (code (eql +bson-data-symbol+)) array)
+;  (multiple-value-bind (str rest) (bson-decode +bson-data-string+ array)
+;    (values (intern str) rest)))
 
 (defmethod bson-decode ( (code (eql +bson-data-oid+)) array)
   (values (make-bson-oid :oid (subseq array 0 12)) (subseq array 12)))
