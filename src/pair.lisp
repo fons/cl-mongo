@@ -19,7 +19,15 @@
 	     (:constructor pair (key value)))
   key value)
 
-(defgeneric kv (a b &rest rest) )
+(defgeneric kv (a b &rest rest) 
+  (:documentation "
+This a helper function for key-value pairs and sets of key-value pairs.  
+In a key-value pair like (kv key value) the key has to be a string and the
+value something which is serializable. 
+key-value pairs can be combined using kv as well : (kv (kv key1 val1) (kv key2 val2)).
+This combination of key-value pairs is equivalent to a document without a unique id.
+The server will assign a unique is if a list of key-value pairs is saved."))
+
 
 (defmethod kv ( (a (eql nil) ) (b (eql nil)) &rest rest)
   (declare (ignore rest))

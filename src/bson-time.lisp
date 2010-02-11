@@ -9,8 +9,6 @@
 
 (defvar      *bt-time-zone*    5 "the current time zone; 5 -> EST")
 
-;;(decode-universal-time (floor (* (get-element "time" (car (docs (db.find "foo" 'all)))) 0.001)))
-
 #|
   bson/mongo uses miliseconds since epoch (1/1/1970 0:0:0 GMT).
   this encapsulates that concept
@@ -62,6 +60,7 @@
       "no time set.."))
 
 (defun time-zone ()
+  "Set the time zone appropriate for the current environment."
   (setf *bt-time-zone* (car (last (multiple-value-list (get-decoded-time))))))
 
   

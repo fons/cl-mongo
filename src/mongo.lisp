@@ -13,7 +13,9 @@
   ((port   :reader   port             :initarg :port)
    (host   :reader   host             :initarg :host)
    (socket :accessor socket           :initarg :socket)
-   (db     :accessor db               :initarg :db)))
+   (db     :accessor db               :initarg :db))
+  (:documentation " Encapsulates the connection to the mongo database.
+Each connection is a added to a global list of connections."))
 
 ;	     
 (defmethod initialize-instance :after ( (mongo mongo) &key)
@@ -66,6 +68,9 @@
 
 
 (defun close-all-connections ()
+"
+Close all connections in the global connection list.
+"
   (dolist (mongo *mongo-registry*)
     (pop *mongo-registry*)
     (close (mongo-stream mongo))))
@@ -90,7 +95,10 @@
 
 
 (defgeneric db.use ( db &key )
-  (:documentation "use a specific db"))
+  (:documentation "
+Use a database on the mongo server. Opens a connection if one isn't already 
+established. (db.use -) can be used to go to a previosuly visited database, 
+similar to cd -. "))
 
 (defmethod db.use ( (db string) &key (host "localhost") (port +MONGO-PORT+))
   (push db *db.use-history*)
@@ -111,7 +119,13 @@
 ;; special commands + : up -:down
 
 (defun cwd ( &key (mongo nil) )
-  (db (or mongo (mongo))))
+"
+Show the current database.
+"
+(db (or mongo (mongo))))
 
 (defun nwd ()
-  (cadr *db.use-history*))
+"
+Show the database set by the `(db.use -)` command
+"
+(cadr *db.use-history*))

@@ -35,6 +35,7 @@
    :db.indexes
    :db.collections
    :db.count
+   :db.eval
    :close-all-connections
    :time-zone
    :date-time
@@ -48,4 +49,7 @@
    :rm
    :docs
    :now
+
+   ;; documentation generator
+   :gendoc
    ))
