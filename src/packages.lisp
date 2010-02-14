@@ -51,5 +51,6 @@
    :now
 
    ;; documentation generator
-   :gendoc
+   :generate-readme
+   :*REPO-ROOT*
    ))

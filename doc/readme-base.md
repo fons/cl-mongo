@@ -156,7 +156,10 @@ At least the following is missing :
 * GridFS
 * ......
 
-## Commands
+## API documentation
+
+I use Edi Weitz's [documentation template](http://weitz.de/documentation-template/)
+to generate an api description based on embedded comments. 
 
 
 
