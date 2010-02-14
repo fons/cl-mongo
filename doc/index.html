@@ -1,167 +1,27 @@
-# cl-mongo
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html> 
 
-
-## Intro
-
-[mongo is a scalable, high-performance, open source, schema-free, document-oriented database.](http://www.mongodb.org). 
-
-
-This is a common lisp interface that allows you to work with a mongo document database.
-This is not a driver (yet) as specified in the mongo documents; There is still some 
-functionality I need to implement.
-
-
-Various features are missing such as serialization of binary data and code, authentication, 
-gridfs among other things.
-
-In its current state cl-mongo provides the ability to insert, update and delete documents.
-It also supports indexing.
-
-I developed this using *sbcl*. I didn't rely on any sbcl extenxions so I expect this to run under 
-other lisps as well.
-
-## Version
-
-   Version 0.1.1
-
-   This version is basically an alpha release. Many features are and testing has not been
-   tested extensively.
-
-   
-## Installation
-
-Use asdf to install cl-mongo. 
-
-## A sample session
-This connects to the test database on the local mongo server listening on its default port.
-
-    (use-package :cl-mongo)
-    (db.use "test")
-
-Insert a key-value pair as the first document into collection "foo".
-
-`(db.insert "foo" (kv "document" "one") )`
-
-Pretty-print the documents returned by the find command. iter will ensure that the cursor is
-fully iterated over.
-
-    (pp (iter (db.find "foo" 'all)))`
-
-     {
-        "_id" -> objectid(4B5CF28970DFF196A75FE1F0)
-        "document"  ->  one
-     }
-
-Create a document. A document is collection of key-value pairs and a unique identifier called "_id".
-
-`(defvar *DOC* (make-document))`
-
-Add various elements to the document.
-
-       (add-element "tag" "key" *DOC*)`
-
-
-       {  DOCUMENT 
-
-       {
-       tag  -> key 
-       }
-       }
-
-
-    (add-element "array" (list 1 2 3 "hello") *DOC*)
-
-    {  DOCUMENT 
-
-    {
-    tag  -> key 
-    	 1 
-    	 2 
-    	 3 
-    	 hello 
-  	 array  -> NIL 
-	 }
-     }
-
-
-Insert document into the database.
-
-`(db.insert "foo" *DOC*)`
-
-Print the current contents.
-
-       (pp (iter (db.find "foo" 'all)))
-
-       {
-       "_id" -> objectid(4B5CF28970DFF196A75FE1F0)
-       "document"  ->  one
-       }
-
-       {
-       "_id" -> objectid(8B508D5CBB5D451D961F046D)
-       "array"  -> [ 1, 2, 3, hello,]
-       "tag"  ->  key
-       }
-
-
-Bind variable `*DOC*` to the second document returned by the find command, 
-add an other element and save back to the collection.
-
-      (defvar *DOC* (cadr (docs (db.find "foo" 'all))))`
-      (add-element "tags" (list 'good 'bad 'ugly) *DOC*)
-      (db.save "foo" *DOC*)
-      (pp (db.find "foo" 'all))
-
-      {
-	"_id" -> objectid(4B5CF28970DFF196A75FE1F0)
-      	"document"  ->  one
-      }
-
-      {
-        "_id" -> objectid(8B508D5CBB5D451D961F046D)
-      	"tags"  -> [ GOOD, BAD, UGLY,]
-     	"tag"  ->  key
-     	"array"  -> [ 1, 2, 3, hello,]
-      }
-
-Check the status of the server.
-
-      (db.use "admin")
-      (nd (db.run-command 'serverstatus))
-
-        "ok"  ->  1.0d0
-	  "mem"  -> 
-	    "mapped"  ->  80
-	    "virtual"  ->  177
-            "resident"  ->  3
-        "globalLock"  -> 
-          "ratio"  ->  4.644753171959394d-5
-          "lockTime"  ->  6493354.0d0
-        "totalTime"  ->  1.39799764586d11
-        "uptime"  ->  139799.0d0
-
-
-
-## What's missing
-
-At least the following is missing :  
-
-* Request id/ Response id are left 0 in the header.
-* Serialization of binary data.
-* Serialization of regular expressions.
-* Serialization of code scope.
-* Advanced queries like min/max queries, group by, snapshot support.
-* Aggregation except for distinct and group by.
-* Authentication
-* GridFS
-* ......
-
-## API documentation
-
-I use Edi Weitz's [documentation template](http://weitz.de/documentation-template/)
-to generate an api description based on embedded comments. 
-
-
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <title>CL-MONGO - api reference</title>
+  <style type="text/css">
+  pre { padding:5px; background-color:#e0e0e0 }
+  h3, h4 { text-decoration: underline; }
+  a { text-decoration: none; padding: 1px 2px 1px 2px; }
+  a:visited { text-decoration: none; padding: 1px 2px 1px 2px; }
+  a:hover { text-decoration: none; padding: 1px 1px 1px 1px; border: 1px solid #000000; } 
+  a:focus { text-decoration: none; padding: 1px 2px 1px 2px; border: none; }
+  a.none { text-decoration: none; padding: 0; }
+  a.none:visited { text-decoration: none; padding: 0; } 
+  a.none:hover { text-decoration: none; border: none; padding: 0; } 
+  a.none:focus { text-decoration: none; border: none; padding: 0; } 
+  a.noborder { text-decoration: none; padding: 0; } 
+  a.noborder:visited { text-decoration: none; padding: 0; } 
+  a.noborder:hover { text-decoration: none; border: none; padding: 0; } 
+  a.noborder:focus { text-decoration: none; border: none; padding: 0; }  
+  pre.none { padding:5px; background-color:#ffffff }
+  </style>
+</head>
 
 <body bgcolor=white>
 
@@ -237,7 +97,7 @@ current version is 0.1.0.
 
 
 
-
+<!-- Entry for *REPO-ROOT* -->
 
 <p><br>[Special variable]<br><a class=none name='*repo-root*'><b>*repo-root*</b></a>
 <blockquote><br>
@@ -246,10 +106,10 @@ root of the repository; used for documentation generation
 
 </blockquote>
 
+<!-- End of entry for *REPO-ROOT* -->
 
 
-
-
+<!-- Entry for ADD-ELEMENT -->
 
 <p><br>[Generic function]<br><a class=none name='add-element'><b>add-element</b> <i>key value document</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -258,10 +118,10 @@ add element with key and value to a document
 
 </blockquote>
 
+<!-- End of entry for ADD-ELEMENT -->
 
 
-
-
+<!-- Entry for CLOSE-ALL-CONNECTIONS -->
 
 <p><br>[Function]<br><a class=none name='close-all-connections'><b>close-all-connections</b> <i></i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -272,10 +132,10 @@ Close all connections in the global connection list.
 
 </blockquote>
 
+<!-- End of entry for CLOSE-ALL-CONNECTIONS -->
 
 
-
-
+<!-- Entry for CWD -->
 
 <p><br>[Function]<br><a class=none name='cwd'><b>cwd</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -286,10 +146,10 @@ Show the current database.
 
 </blockquote>
 
+<!-- End of entry for CWD -->
 
 
-
-
+<!-- Entry for DATE-TIME -->
 
 <p><br>[Function]<br><a class=none name='date-time'><b>date-time</b> <i>second minute hour day month year <tt>&amp;optional</tt> time-zone</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -298,10 +158,10 @@ Generate a time stamp the mongo/bson protocol understands.
 
 </blockquote>
 
+<!-- End of entry for DATE-TIME -->
 
 
-
-
+<!-- Entry for DB.COLLECTIONS -->
 
 <p><br>[Generic function]<br><a class=none name='db.collections'><b>db.collections</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -310,10 +170,10 @@ Generate a time stamp the mongo/bson protocol understands.
 
 </blockquote>
 
+<!-- End of entry for DB.COLLECTIONS -->
 
 
-
-
+<!-- Entry for DB.COLLECTIONS -->
 
 <p><br>[Function]<br><a class=none name='db.collections'><b>db.collections</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -324,10 +184,10 @@ Show all the collections in the current database.
 
 </blockquote>
 
+<!-- End of entry for DB.COLLECTIONS -->
 
 
-
-
+<!-- Entry for DB.COUNT -->
 
 <p><br>[Generic function]<br><a class=none name='db.count'><b>db.count</b> <i>collection selector <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -340,10 +200,10 @@ all the documents in the collection.
 
 </blockquote>
 
+<!-- End of entry for DB.COUNT -->
 
 
-
-
+<!-- Entry for DB.DELETE -->
 
 <p><br>[Generic function]<br><a class=none name='db.delete'><b>db.delete</b> <i>collection object <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -357,10 +217,10 @@ It may be more efficient to run a delete script on he server side.
 
 </blockquote>
 
+<!-- End of entry for DB.DELETE -->
 
 
-
-
+<!-- Entry for DB.ENSURE-INDEX -->
 
 <p><br>[Generic function]<br><a class=none name='db.ensure-index'><b>db.ensure-index</b> <i>collection keys <tt>&amp;key</tt> unique mongo asc</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -371,10 +231,10 @@ Create an index specified by the keys in a collection
 
 </blockquote>
 
+<!-- End of entry for DB.ENSURE-INDEX -->
 
 
-
-
+<!-- Entry for DB.EVAL -->
 
 <p><br>[Generic function]<br><a class=none name='db.eval'><b>db.eval</b> <i>code <tt>&amp;rest</tt> rest</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -383,10 +243,10 @@ run javascript code server side
 
 </blockquote>
 
+<!-- End of entry for DB.EVAL -->
 
 
-
-
+<!-- Entry for DB.FIND -->
 
 <p><br>[Generic function]<br><a class=none name='db.find'><b>db.find</b> <i>collection kv <tt>&amp;key</tt> selector limit skip options mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -401,10 +261,10 @@ mongo documentation.
 
 </blockquote>
 
+<!-- End of entry for DB.FIND -->
 
 
-
-
+<!-- Entry for DB.INDEXES -->
 
 <p><br>[Generic function]<br><a class=none name='db.indexes'><b>db.indexes</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -413,10 +273,10 @@ mongo documentation.
 
 </blockquote>
 
+<!-- End of entry for DB.INDEXES -->
 
 
-
-
+<!-- Entry for DB.INDEXES -->
 
 <p><br>[Function]<br><a class=none name='db.indexes'><b>db.indexes</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -427,10 +287,10 @@ Return all indexes in the database.
 
 </blockquote>
 
+<!-- End of entry for DB.INDEXES -->
 
 
-
-
+<!-- Entry for DB.INSERT -->
 
 <p><br>[Generic function]<br><a class=none name='db.insert'><b>db.insert</b> <i>collection document <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -443,10 +303,10 @@ a key-value pair or kv list (see the kv functions).
 
 </blockquote>
 
+<!-- End of entry for DB.INSERT -->
 
 
-
-
+<!-- Entry for DB.ITER -->
 
 <p><br>[Generic function]<br><a class=none name='db.iter'><b>db.iter</b> <i>result <tt>&amp;key</tt> limit mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -455,10 +315,10 @@ next document iteration
 
 </blockquote>
 
+<!-- End of entry for DB.ITER -->
 
 
-
-
+<!-- Entry for DB.NEXT -->
 
 <p><br>[Generic function]<br><a class=none name='db.next'><b>db.next</b> <i>collection cursor-id <tt>&amp;key</tt> limit mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -469,10 +329,10 @@ Executes the next call on the iterator identified by cursor-id.
 
 </blockquote>
 
+<!-- End of entry for DB.NEXT -->
 
 
-
-
+<!-- Entry for DB.RUN-COMMAND -->
 
 <p><br>[Generic function]<br><a class=none name='db.run-command'><b>db.run-command</b> <i>cmd <tt>&amp;key</tt> arg mongo index collection</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -484,10 +344,10 @@ For most commands you can just uses the key-value shown in the mongo documentati
 
 </blockquote>
 
+<!-- End of entry for DB.RUN-COMMAND -->
 
 
-
-
+<!-- Entry for DB.SAVE -->
 
 <p><br>[Generic function]<br><a class=none name='db.save'><b>db.save</b> <i>collection document <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -501,10 +361,10 @@ In other words this a a helper-function build around *db.insert* and *db.update*
 
 </blockquote>
 
+<!-- End of entry for DB.SAVE -->
 
 
-
-
+<!-- Entry for DB.STOP -->
 
 <p><br>[Generic function]<br><a class=none name='db.stop'><b>db.stop</b> <i>cursor <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -515,10 +375,10 @@ Stop iterating and clean up the iterator on the server by making a server call.
 
 </blockquote>
 
+<!-- End of entry for DB.STOP -->
 
 
-
-
+<!-- Entry for DB.UPDATE -->
 
 <p><br>[Generic function]<br><a class=none name='db.update'><b>db.update</b> <i>collection selector new-document <tt>&amp;key</tt> mongo upsert multi</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -530,10 +390,10 @@ found in the collection. &#039;:multi&#039;  : Update all documents identified b
 
 </blockquote>
 
+<!-- End of entry for DB.UPDATE -->
 
 
-
-
+<!-- Entry for DB.USE -->
 
 <p><br>[Generic function]<br><a class=none name='db.use'><b>db.use</b> <i>db <tt>&amp;key</tt> host port</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -545,10 +405,10 @@ similar to cd -.
 
 </blockquote>
 
+<!-- End of entry for DB.USE -->
 
 
-
-
+<!-- Entry for DOCS -->
 
 <p><br>[Function]<br><a class=none name='docs'><b>docs</b> <i>result</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -560,10 +420,10 @@ Typical ue would be in conjunction with db.find like so (docs (iter (db.find &#0
 
 </blockquote>
 
+<!-- End of entry for DOCS -->
 
 
-
-
+<!-- Entry for DOCUMENT -->
 
 <p><br>[Standard class]<br><a class=none name='document'><b>document</b></a>
 <blockquote><br>
@@ -577,10 +437,10 @@ the document was generated by the client (as opposed to having been read from th
 
 </blockquote>
 
+<!-- End of entry for DOCUMENT -->
 
 
-
-
+<!-- Entry for GENERATE-README -->
 
 <p><br>[Function]<br><a class=none name='generate-readme'><b>generate-readme</b> <i><tt>&amp;key</tt> path</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -596,10 +456,10 @@ appending the api documentation to &lt;path&gt;/doc/readme-base.md.
 
 </blockquote>
 
+<!-- End of entry for GENERATE-README -->
 
 
-
-
+<!-- Entry for GET-ELEMENT -->
 
 <p><br>[Generic function]<br><a class=none name='get-element'><b>get-element</b> <i>key document</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -608,10 +468,10 @@ Get an element identified by key from the document.
 
 </blockquote>
 
+<!-- End of entry for GET-ELEMENT -->
 
 
-
-
+<!-- Entry for HT->DOCUMENT -->
 
 <p><br>[Function]<br><a class=none name='ht->document'><b>ht->document</b> <i>ht</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -620,10 +480,10 @@ Convert a hash-table to a document.
 
 </blockquote>
 
+<!-- End of entry for HT->DOCUMENT -->
 
 
-
-
+<!-- Entry for ITER -->
 
 <p><br>[Function]<br><a class=none name='iter'><b>iter</b> <i>result <tt>&amp;key</tt> mongo max-per-call</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -636,10 +496,10 @@ per query can be specified using the max-per-call keyword.
 
 </blockquote>
 
+<!-- End of entry for ITER -->
 
 
-
-
+<!-- Entry for KV -->
 
 <p><br>[Generic function]<br><a class=none name='kv'><b>kv</b> <i>a b <tt>&amp;rest</tt> rest</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -654,10 +514,10 @@ The server will assign a unique is if a list of key-value pairs is saved.
 
 </blockquote>
 
+<!-- End of entry for KV -->
 
 
-
-
+<!-- Entry for MAKE-DOCUMENT -->
 
 <p><br>[Function]<br><a class=none name='make-document'><b>make-document</b> <i><tt>&amp;key</tt> oid</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -669,10 +529,10 @@ is supplied.
 
 </blockquote>
 
+<!-- End of entry for MAKE-DOCUMENT -->
 
 
-
-
+<!-- Entry for MONGO -->
 
 <p><br>[Standard class]<br><a class=none name='mongo'><b>mongo</b></a>
 <blockquote><br>
@@ -682,10 +542,10 @@ Each connection is a added to a global list of connections.
 
 </blockquote>
 
+<!-- End of entry for MONGO -->
 
 
-
-
+<!-- Entry for MONGO -->
 
 <p><br>[Generic function]<br><a class=none name='mongo'><b>mongo</b> <i><tt>&amp;key</tt> index host port</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -694,10 +554,10 @@ mongo connection
 
 </blockquote>
 
+<!-- End of entry for MONGO -->
 
 
-
-
+<!-- Entry for ND -->
 
 <p><br>[Function]<br><a class=none name='nd'><b>nd</b> <i>result <tt>&amp;key</tt> stream</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -708,10 +568,10 @@ Pretty-print for non-document responses, like the response to a database command
 
 </blockquote>
 
+<!-- End of entry for ND -->
 
 
-
-
+<!-- Entry for NOW -->
 
 <p><br>[Function]<br><a class=none name='now'><b>now</b> <i></i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -722,10 +582,10 @@ Return the current date and time in bson format.
 
 </blockquote>
 
+<!-- End of entry for NOW -->
 
 
-
-
+<!-- Entry for NWD -->
 
 <p><br>[Function]<br><a class=none name='nwd'><b>nwd</b> <i></i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -736,10 +596,10 @@ Show the database set by the `(db.use -)` command
 
 </blockquote>
 
+<!-- End of entry for NWD -->
 
 
-
-
+<!-- Entry for PP -->
 
 <p><br>[Generic function]<br><a class=none name='pp'><b>pp</b> <i>result <tt>&amp;key</tt> nd stream</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -752,10 +612,10 @@ ok in mosty cases. See nd for an alternative.
 
 </blockquote>
 
+<!-- End of entry for PP -->
 
 
-
-
+<!-- Entry for RM -->
 
 <p><br>[Function]<br><a class=none name='rm'><b>rm</b> <i>result <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -770,10 +630,10 @@ which deletes all documents in foo, with field key equal to 1.
 
 </blockquote>
 
+<!-- End of entry for RM -->
 
 
-
-
+<!-- Entry for RM-ELEMENT -->
 
 <p><br>[Generic function]<br><a class=none name='rm-element'><b>rm-element</b> <i>key document</i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -782,10 +642,10 @@ Remove element identified by key from a document
 
 </blockquote>
 
+<!-- End of entry for RM-ELEMENT -->
 
 
-
-
+<!-- Entry for TIME-ZONE -->
 
 <p><br>[Function]<br><a class=none name='time-zone'><b>time-zone</b> <i></i> =&gt; <i>result</i></a>
 <blockquote><br>
@@ -794,7 +654,7 @@ Set the time zone appropriate for the current environment.
 
 </blockquote>
 
-
+<!-- End of entry for TIME-ZONE -->
 
 
 <br>&nbsp;<br><h3><a class=none name="ack">Acknowledgements</a></h3>
@@ -807,3 +667,4 @@ $Header: /usr/local/cvsrep/documentation-template/output.lisp,v 1.14 2008/05/29 
 <p><a href="http://www.mohegan-skunkworks.com/index.html">BACK TO MY HOMEPAGE</a>
 
 </body>
+</html>

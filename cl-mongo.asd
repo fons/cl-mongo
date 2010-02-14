@@ -12,6 +12,7 @@
   :description "lisp system to interact with mongo, a non-sql db"
   :depends-on (:uuid
 	       :babel
+	       :documentation-template
 	       :usocket)
   :serial t
   :components 
@@ -22,6 +23,7 @@
 		 (:file "encode-float")
 		 (:file "bson-oid")
 		 (:file "bson-time")
+		 (:file "bson-code")
 		 (:file "pair")
 		 (:file "bson")
 		 (:file "bson-array")
@@ -29,6 +31,7 @@
 		 (:file "protocol")
 		 (:file "mongo")
 		 (:file "db")
+		 (:file "doc") 
 		 (:file "shell")))
    (:static-file "README.md")
    (:static-file "COPYING")))
