@@ -6,6 +6,7 @@
 (defconstant +bson-data-string+   2   "bson string encoding")
 (defconstant +bson-data-object+   3   "bson data array; bson object")
 (defconstant +bson-data-array+    4   "bson array")
+(defconstant +bson-data-binary+   5   "bson binary")
 (defconstant +bson-data-oid+      7   "bson oid encoding")
 (defconstant +bson-data-boolean+  8   "bson boolean encoding")
 (defconstant +bson-data-date+     9   "bson date encoding")
@@ -73,6 +74,25 @@ clashed with the encoding for booleans..
 	       (add-octets (string-to-null-terminated-octet value) array))) 
       (call-next-method key value :array array :type type :encoder #'encode-value))))
 
+(defmethod bson-encode ( (key string) (value bson-binary-base) &key (array nil) (type +bson-data-binary+) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
+    (labels ((encode-value (array)
+	       ;; length of the data array
+	       (add-octets (int32-to-octet (length (data value))) array)
+	       (add-octets (byte-to-octet (type-id value)) array)
+	       (add-octets (data value) array))) 
+      (call-next-method key value :array array :type type :encoder #'encode-value))))
+
+(defmethod bson-encode ( (key string) (value bson-binary) &key (array nil) (type +bson-data-binary+) )
+  "the ordinary binary type as some structure in that the length of the binary array is encoded"
+  (let ((array (or array (make-octet-vector +default-array-size+))))
+    (labels ((encode-value (array)
+	       (add-octets (int32-to-octet (+ 4 (length (data value)))) array)
+	       (add-octets (byte-to-octet (type-id value)) array)
+	       (add-octets (int32-to-octet (length (data value))) array)
+	       (add-octets (data value) array))) 
+      (bson-encode key value :array array :type type :encoder #'encode-value))))
+
 (defmethod bson-encode ( (key string) (value bson-code) &key (array nil))
   (bson-encode key (code value) :array array :type +bson-data-code+))
 
@@ -100,6 +120,7 @@ clashed with the encoding for booleans..
     (labels ((encode-date(array)
       	       (add-octets (int64-to-octet (raw value) ) array))) ; value converted to 64 bits
       (call-next-method key value :array array :type +bson-data-date+ :encoder #'encode-date))))
+
       
 
 (defmethod bson-encode-boolean( (key string) value  &key (array nil) )
@@ -167,6 +188,13 @@ clashed with the encoding for booleans..
 	 (rest (subseq array (+ 4 size))))
     (values str rest)))
 
+(defmethod bson-decode ( (code (eql +bson-data-binary+)) array)
+  (let* ((type (octet-to-byte  (subseq array 4 5)))
+	 (size (if (eql type #x02) (octet-to-int32 (subseq array 5 9)) (octet-to-int32 (subseq array 0 4))))
+	 (offset (if (eql type #x02) 9 5))
+	 (binary  (bson-binary type (subseq array offset (+ offset size))))
+	 (rest (subseq array (+ offset size))))
+    (values binary rest)))
 
 (defmethod bson-decode ( (code (eql +bson-data-symbol+)) array)
   (multiple-value-bind (str rest) (bson-decode +bson-data-string+ array)
@@ -189,7 +217,6 @@ clashed with the encoding for booleans..
 
 (defmethod bson-decode ( (code (eql +bson-data-date+)) array)
   (values (make-bson-time (octet-to-uint64 (subseq array 0 8))) (subseq array 8)))
-
 
 #|
   Compound Types : arrays, objects 

@@ -95,18 +95,98 @@ ok in mosty cases. See nd for an alternative.
       )))
 
 (defun nd (result &key (stream t) )
-"
-Pretty-print for non-document responses, like the response to a database command.
-"
+  "Pretty-print for non-document responses, like the response to a database command."
   (pp result :stream stream :nd t))
 
 (defun now()
-"
-Return the current date and time in bson format.  
-"
-(make-bson-time))
+  "Return the current date and time in bson format.  "
+  (make-bson-time))
 
 (defun date-time (second minute hour day month year &optional (time-zone *bt-time-zone*) )
   "Generate a time stamp the mongo/bson protocol understands."
   (make-bson-time (gmt-to-bson-time (encode-universal-time second minute hour day month year time-zone))))
 
+(defgeneric elp (element) )
+
+(defmethod elp ( element ) 
+  (format nil "~A" element))
+
+(defmethod elp ( (doc document) ) 
+  (let ((str ""))
+    (dolist (el (doc-elements doc))
+      (setf str (concatenate 'string (format nil "(~A : ~A) " el (elp (get-element el doc))) str)))
+    str))
+
+(defmethod elp ( (element cons) ) 
+  (mapcar #'elp element))
+
+(defun print-doc (doc &key (order (list :rest)) (nl nil) (msg "")) 
+  (let ((lst)
+	(elements (doc-elements doc)))
+    (labels ((pr-_id()
+	       (when (and (not (_local doc)) (or (find "_id" order) (find :rest order)))
+		 (format t "{_id : ~A} " (_id doc))
+		 (when nl (format t "~%"))))
+	     (gen-traversal ()
+	       (dolist (el (remove "_id" order :test #'equal))
+		 (if (eql el :rest)
+		     (setf lst (concatenate 'cons  elements lst))
+		     (progn
+		       (push el lst)
+		       (setf elements (remove el elements :test #'equal)))))
+	       (nreverse lst)))
+      (when msg (format t "~A" msg))
+      (unless nl (format t "["))
+      (pr-_id)
+      (dolist (el (gen-traversal))
+	(progn
+	  (format t "{~A : ~A} " el (elp (get-element el doc)))
+	  (when nl (format t "~%"))))
+      (unless nl (format t "]~%")))))
+
+(defgeneric show ( things &key )
+  (:documentation "Print a list of things. Things can be users, databases, collections in the current database,
+the profile and more. Things is a keyword so (show 'users) will show all users."))
+
+(defmethod show ( (things (eql :connections)) &key)
+  (mongo-show))
+  
+(defmethod show ( (func function) &key (order '(:rest) ) (nl nil) (msg nil)  )
+  (mapcar (lambda (doc) (print-doc doc :order order :nl nl :msg msg)) (docs (iter (funcall func))))
+  nil)
+
+(defmethod show (( things (eql :collections)) &key (order '("name" :rest)))
+  (show #'db.collections :order order))
+
+(defmethod show ( (things (eql :indexes) ) &key (order '("name" :rest)))
+  (show #'db.indexes :order order))
+
+(defmethod show ( (things (eql :databases)) &key (order '("totalSize" "databases")))
+  (show (lambda () (db.run-command :listdatabases)) :order order))
+
+(defmethod show :before ( (things (eql :databases)) &key)
+  (db.use "admin"))
+
+(defmethod show :after ( (things (eql :databases)) &key)
+  (db.use -))
+
+(defmethod show ( (things (eql :users)) &key (order '("user" "pwd") ))
+  (show (lambda () (db.find "system.users" 'all)) :order order))
+
+(defmethod show ( (things (eql :status)) &key (order '(:rest)))
+  (show (lambda () (db.run-command :serverstatus)) :order order :nl t))
+
+(defmethod show ( (things (eql :assertinfo)) &key (order '(:rest)))
+  (show (lambda () (db.run-command things)) :order order :nl t))
+
+(defmethod show ( (things (eql :errors)) &key (order '(:rest)))
+  (show (lambda () (db.run-command :getlasterror)) :order order :msg "last error : ")
+  (show (lambda () (db.run-command :getpreverror)) :order order :msg "prev error : "))
+
+(defgeneric exp-test (arg))
+
+(defmethod exp-test ( (arg (eql :hello)) )
+  (format t "hello"))
+
+(defmethod exp-test ( (arg string) )
+  (format t "hello : ~A" arg))

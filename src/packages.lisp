@@ -4,12 +4,6 @@
   (:use #:common-lisp #:babel #:uuid #:usocket)
   (:export
 
-   ;;keywords
-   :all
-   :listdatabases
-   :serverstatus
-   :deleteindexes
-
    ;; document
    :document
    :make-document
@@ -20,7 +14,13 @@
 
    ;;commands
    :mongo
+   :mongo-show
+   :mongo-close
+   :mongo-swap
+
    :kv
+   
+   :db.create-collection
    :db.use
    :db.insert
    :db.update
@@ -36,7 +36,8 @@
    :db.collections
    :db.count
    :db.eval
-   :close-all-connections
+   :db.add-user
+   :db.auth
    :time-zone
    :date-time
 
@@ -49,6 +50,9 @@
    :rm
    :docs
    :now
+   :show
+
+   :exp-test
 
    ;; documentation generator
    :generate-readme

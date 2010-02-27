@@ -46,12 +46,14 @@ license</a> so you can basically do with it whatever you want.
     <ol>
       <li><a href="#*repo-root*"><code>*repo-root*</code></a>
       <li><a href="#add-element"><code>add-element</code></a>
-      <li><a href="#close-all-connections"><code>close-all-connections</code></a>
       <li><a href="#cwd"><code>cwd</code></a>
       <li><a href="#date-time"><code>date-time</code></a>
+      <li><a href="#db.add-user"><code>db.add-user</code></a>
+      <li><a href="#db.auth"><code>db.auth</code></a>
       <li><a href="#db.collections"><code>db.collections</code></a>
       <li><a href="#db.collections"><code>db.collections</code></a>
       <li><a href="#db.count"><code>db.count</code></a>
+      <li><a href="#db.create-collection"><code>db.create-collection</code></a>
       <li><a href="#db.delete"><code>db.delete</code></a>
       <li><a href="#db.ensure-index"><code>db.ensure-index</code></a>
       <li><a href="#db.eval"><code>db.eval</code></a>
@@ -68,6 +70,7 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#db.use"><code>db.use</code></a>
       <li><a href="#docs"><code>docs</code></a>
       <li><a href="#document"><code>document</code></a>
+      <li><a href="#exp-test"><code>exp-test</code></a>
       <li><a href="#generate-readme"><code>generate-readme</code></a>
       <li><a href="#get-element"><code>get-element</code></a>
       <li><a href="#ht->document"><code>ht->document</code></a>
@@ -76,12 +79,16 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#make-document"><code>make-document</code></a>
       <li><a href="#mongo"><code>mongo</code></a>
       <li><a href="#mongo"><code>mongo</code></a>
+      <li><a href="#mongo-close"><code>mongo-close</code></a>
+      <li><a href="#mongo-show"><code>mongo-show</code></a>
+      <li><a href="#mongo-swap"><code>mongo-swap</code></a>
       <li><a href="#nd"><code>nd</code></a>
       <li><a href="#now"><code>now</code></a>
       <li><a href="#nwd"><code>nwd</code></a>
       <li><a href="#pp"><code>pp</code></a>
       <li><a href="#rm"><code>rm</code></a>
       <li><a href="#rm-element"><code>rm-element</code></a>
+      <li><a href="#show"><code>show</code></a>
       <li><a href="#time-zone"><code>time-zone</code></a>
     </ol>
   <li><a href="#ack">Acknowledgements</a>
@@ -121,28 +128,12 @@ add element with key and value to a document
 <!-- End of entry for ADD-ELEMENT -->
 
 
-<!-- Entry for CLOSE-ALL-CONNECTIONS -->
-
-<p><br>[Function]<br><a class=none name='close-all-connections'><b>close-all-connections</b> <i></i> =&gt; <i>result</i></a>
-<blockquote><br>
-
-
-Close all connections in the global connection list.
-
-
-</blockquote>
-
-<!-- End of entry for CLOSE-ALL-CONNECTIONS -->
-
-
 <!-- Entry for CWD -->
 
 <p><br>[Function]<br><a class=none name='cwd'><b>cwd</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
 Show the current database.
-
 
 </blockquote>
 
@@ -159,6 +150,30 @@ Generate a time stamp the mongo/bson protocol understands.
 </blockquote>
 
 <!-- End of entry for DATE-TIME -->
+
+
+<!-- Entry for DB.ADD-USER -->
+
+<p><br>[Generic function]<br><a class=none name='db.add-user'><b>db.add-user</b> <i>username password <tt>&amp;key</tt> mongo readonly</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+ Add a user to the database. 
+
+</blockquote>
+
+<!-- End of entry for DB.ADD-USER -->
+
+
+<!-- Entry for DB.AUTH -->
+
+<p><br>[Generic function]<br><a class=none name='db.auth'><b>db.auth</b> <i>username password <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+authenticate a user with a password
+
+</blockquote>
+
+<!-- End of entry for DB.AUTH -->
 
 
 <!-- Entry for DB.COLLECTIONS -->
@@ -178,9 +193,7 @@ Generate a time stamp the mongo/bson protocol understands.
 <p><br>[Function]<br><a class=none name='db.collections'><b>db.collections</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
 Show all the collections in the current database.
-
 
 </blockquote>
 
@@ -201,6 +214,18 @@ all the documents in the collection.
 </blockquote>
 
 <!-- End of entry for DB.COUNT -->
+
+
+<!-- Entry for DB.CREATE-COLLECTION -->
+
+<p><br>[Generic function]<br><a class=none name='db.create-collection'><b>db.create-collection</b> <i>collection <tt>&amp;key</tt></i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+create a collection
+
+</blockquote>
+
+<!-- End of entry for DB.CREATE-COLLECTION -->
 
 
 <!-- Entry for DB.DELETE -->
@@ -281,9 +306,7 @@ mongo documentation.
 <p><br>[Function]<br><a class=none name='db.indexes'><b>db.indexes</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
 Return all indexes in the database.
-
 
 </blockquote>
 
@@ -295,11 +318,8 @@ Return all indexes in the database.
 <p><br>[Generic function]<br><a class=none name='db.insert'><b>db.insert</b> <i>collection document <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
-Insert a document in a collection. A document is typically generated by `(make-document)`, 
-but it can also be a hash table,
-a key-value pair or kv list (see the kv functions).  
-
+ Insert a document in a collection. A document is typically generated by `(make-document)`, 
+but it can also be a hash table, a key-value pair or kv list (see the kv functions).  
 
 </blockquote>
 
@@ -395,7 +415,7 @@ found in the collection. &#039;:multi&#039;  : Update all documents identified b
 
 <!-- Entry for DB.USE -->
 
-<p><br>[Generic function]<br><a class=none name='db.use'><b>db.use</b> <i>db <tt>&amp;key</tt> host port</i> =&gt; <i>result</i></a>
+<p><br>[Generic function]<br><a class=none name='db.use'><b>db.use</b> <i>db <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
 
@@ -438,6 +458,42 @@ the document was generated by the client (as opposed to having been read from th
 </blockquote>
 
 <!-- End of entry for DOCUMENT -->
+
+
+<!-- Entry for EXP-TEST -->
+
+<p><br>[Generic function]<br><a class=none name='exp-test'><b>exp-test</b> <i>arg</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+<!-- End of entry for EXP-TEST -->
+
+
+<!-- Entry for EXP-TEST -->
+
+<p><br>[Method]<br><a class=none><b>exp-test</b> <i>(arg string)</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+<!-- End of entry for EXP-TEST -->
+
+
+<!-- Entry for EXP-TEST -->
+
+<p><br>[Method]<br><a class=none><b>exp-test</b> <i>(arg (eql hello))</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+<!-- End of entry for EXP-TEST -->
 
 
 <!-- Entry for GENERATE-README -->
@@ -538,7 +594,7 @@ is supplied.
 <blockquote><br>
 
  Encapsulates the connection to the mongo database.
-Each connection is a added to a global list of connections.
+Each connection is a added to a global registry.
 
 </blockquote>
 
@@ -547,14 +603,59 @@ Each connection is a added to a global list of connections.
 
 <!-- Entry for MONGO -->
 
-<p><br>[Generic function]<br><a class=none name='mongo'><b>mongo</b> <i><tt>&amp;key</tt> index host port</i> =&gt; <i>result</i></a>
+<p><br>[Generic function]<br><a class=none name='mongo'><b>mongo</b> <i><tt>&amp;key</tt> host port db name host port db name</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-mongo connection
+ This method returns the connection referred to by the name identifier from 
+the connection registry. The connection name is unique. 
+If no connection with that name exists, a new connection with the supplied or default host, port and db 
+parameters will be created. The default host is localhost; the default port is  27017; the default db is admin.
 
 </blockquote>
 
 <!-- End of entry for MONGO -->
+
+
+<!-- Entry for MONGO-CLOSE -->
+
+<p><br>[Generic function]<br><a class=none name='mongo-close'><b>mongo-close</b> <i>name</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Close the connection to the mongo database. 
+The name should uniquely identify the connection to close.
+This is either a mongo object or the name the object is bound to in the connection registry. 
+To close all open connections use the special symbol &#039;all
+
+</blockquote>
+
+<!-- End of entry for MONGO-CLOSE -->
+
+
+<!-- Entry for MONGO-SHOW -->
+
+<p><br>[Function]<br><a class=none name='mongo-show'><b>mongo-show</b> <i></i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+ Show all registered connections and their session id
+
+</blockquote>
+
+<!-- End of entry for MONGO-SHOW -->
+
+
+<!-- Entry for MONGO-SWAP -->
+
+<p><br>[Generic function]<br><a class=none name='mongo-swap'><b>mongo-swap</b> <i>left right</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Swap the connections identified by the name left and right. Typical use would be 
+like (swap-connection &#039;default &#039;alt. After the function call &#039;default will refer to the connection
+previously referred to with &#039;alt. The default connection is returned by (mongo) and is the default used in the
+api
+
+</blockquote>
+
+<!-- End of entry for MONGO-SWAP -->
 
 
 <!-- Entry for ND -->
@@ -562,9 +663,7 @@ mongo connection
 <p><br>[Function]<br><a class=none name='nd'><b>nd</b> <i>result <tt>&amp;key</tt> stream</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
 Pretty-print for non-document responses, like the response to a database command.
-
 
 </blockquote>
 
@@ -576,9 +675,7 @@ Pretty-print for non-document responses, like the response to a database command
 <p><br>[Function]<br><a class=none name='now'><b>now</b> <i></i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
 Return the current date and time in bson format.  
-
 
 </blockquote>
 
@@ -590,9 +687,7 @@ Return the current date and time in bson format.
 <p><br>[Function]<br><a class=none name='nwd'><b>nwd</b> <i></i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
-Show the database set by the `(db.use -)` command
-
+ Show the database set by the `(db.use -)` command
 
 </blockquote>
 
@@ -643,6 +738,19 @@ Remove element identified by key from a document
 </blockquote>
 
 <!-- End of entry for RM-ELEMENT -->
+
+
+<!-- Entry for SHOW -->
+
+<p><br>[Generic function]<br><a class=none name='show'><b>show</b> <i>things <tt>&amp;key</tt> msg nl order</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Print a list of things. Things can be users, databases, collections in the current database,
+the profile and more. Things is a keyword so (show &#039;users) will show all users.
+
+</blockquote>
+
+<!-- End of entry for SHOW -->
 
 
 <!-- Entry for TIME-ZONE -->

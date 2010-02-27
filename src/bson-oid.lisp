@@ -16,7 +16,7 @@
       (make-instance 'bson-oid)))
 
 (defmethod print-object ((bson-oid bson-oid) stream)
-  (format stream "~S [~A] ~%" (type-of bson-oid) 
+  (format stream "~S [~A]" (type-of bson-oid) 
 	  (if (slot-boundp bson-oid 'id) 
 	      (id bson-oid)
 	      "no id set..")))

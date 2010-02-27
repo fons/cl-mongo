@@ -49,6 +49,14 @@ is supplied.
 (defmethod rm-element ( (key string) (document document) ) 
   (remhash key (elements document)))
 
+(defun doc-elements ( doc )
+  (let ((lst))
+    (with-hash-table-iterator (iterator (elements doc) )
+      (dotimes (repeat (hash-table-count (elements doc)))
+	(multiple-value-bind (exists-p key value) (iterator)
+	  (declare (ignore value))
+	  (when exists-p (push key lst)))))
+    (nreverse lst)))
 
 ;;
 ;; When the to-hash-able finalizer is used, embedded docs/tables in the response aren't converted

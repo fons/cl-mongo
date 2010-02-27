@@ -22,6 +22,7 @@
 		 (:file "octets")
 		 (:file "encode-float")
 		 (:file "bson-oid")
+		 (:file "bson-binary")
 		 (:file "bson-time")
 		 (:file "bson-code")
 		 (:file "pair")
