@@ -4,18 +4,26 @@
   Connection...
 |#
 
+
+
 (defconstant +MONGO-PORT+ 27017)
+
 
 (defvar *mongo-registry* nil "hash table of all open mongo connections")
 (defvar *db.use-history* () "an attempt to record the history of the shell" )
 
+(defvar *mongo-default-host* "localhost"  "host for the default connection.")
+(defvar *mongo-default-port* +MONGO-PORT+ "port for the default connection.")
+(defvar *mongo-default-db*   "admin"      "database opened by the default connection")
+
 
 (defclass mongo ()
-  ((port   :reader   port             :initarg :port)
-   (host   :reader   host             :initarg :host)
-   (name   :accessor name             :initarg :name)
-   (socket :accessor socket           :initarg :socket)
-   (db     :accessor db               :initarg :db))
+  ((port   :reader   port             :initarg  :port)
+   (host   :reader   host             :initarg  :host)
+   (name   :accessor name             :initarg  :name)
+   (socket :accessor socket           :initarg  :socket)
+   (id     :reader   id               :initform (uuid:make-v4-uuid))
+   (db     :accessor db               :initarg  :db))
   (:documentation " Encapsulates the connection to the mongo database.
 Each connection is a added to a global registry."))
 
@@ -45,20 +53,19 @@ Each connection is a added to a global registry."))
 ;;
 
 		 
-(defun make-mongo ( &key (host "localhost") (port +MONGO-PORT+) (db nil) (name (gensym)) )
-   (make-instance 'mongo :host host :port port  :db db  :socket nil :name name))
+(defun make-mongo ( &key (host *mongo-default-host*) (port *mongo-default-port*) 
+		   (db *mongo-default-db*)  (name (gensym)) )
+  (make-instance 'mongo :host host :port port  :db db  :socket nil :name name))
 
 (defmethod print-object ((mongo mongo) stream)
-  (format stream "(type-of ~S) [name : ~A ] ~% {[socket : ~A] [port : ~A] [host : ~A] [db : ~A]} ~%" 
+  (format stream "(type-of ~S) [name : ~A ] ~% {[id : ~A] [port : ~A] [host : ~A] [db : ~A]} ~%" 
 	  (type-of mongo)
 	  (if (slot-boundp mongo 'name) 
-	      (if (typep (name mongo) 'bson-oid)
-		  (id (name mongo))
-		  (name mongo))
+	      (name mongo)
 	      "name not set")
-	  (if (slot-boundp mongo 'socket) 
-	      (socket mongo)
-	      "socket not set")
+	  (if (slot-boundp mongo 'id) 
+	      (id mongo)
+	      "id not set")
 	  (if (slot-boundp mongo 'port) 
 	      (port mongo)
 	      "port not set")
@@ -81,7 +88,8 @@ the connection registry. The connection name is unique.
 If no connection with that name exists, a new connection with the supplied or default host, port and db 
 parameters will be created. The default host is localhost; the default port is  27017; the default db is admin."))
 
-(defmethod mongo ( &key (host "localhost") (port +MONGO-PORT+) (db "admin") (name :default) )
+(defmethod mongo ( &key (host *mongo-default-host*) (port *mongo-default-port*) 
+		  (db *mongo-default-db*) (name :default) )
   (or (gethash name (mongo-registry)) (make-mongo :host host :port port :db db :name name)))
 
 (defun mongo-show()
@@ -121,7 +129,7 @@ To close all open connections use the special symbol 'all"))
 
 (defgeneric mongo-swap (left right) 
   (:documentation "Swap the connections identified by the name left and right. Typical use would be 
-like (swap-connection 'default 'alt. After the function call 'default will refer to the connection
+like (swap-connection :default :alt. After the function call :default will refer to the connection
 previously referred to with 'alt. The default connection is returned by (mongo) and is the default used in the
 api" ))
 
@@ -197,16 +205,6 @@ similar to cd -. "))
 (defun nwd ()
   " Show the database set by the `(db.use -)` command"
   (cadr *db.use-history*))
-
-(defmacro with-mongo(&body body)
-  `(let ((name (gensym)))
-     (unwind-protect
-       (progn
-	 (mongo-swap 'default (mongo :name name))
-	 ,@body)
-       (progn
-	 (mongo-swap name 'default)
-	 (mongo-close name)))))
 
 (defun mongo-ids ()
   (let ((lst))

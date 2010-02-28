@@ -3,7 +3,6 @@
 #|
   
 |#
-;;:initform (uuid:uuid-to-byte-array (uuid:make-v4-uuid)))))
 
 (defclass bson-oid ()
   ((id :reader id :initarg :oid))
@@ -27,6 +26,4 @@
 
 (defmethod _id ((bson-oid bson-oid))
   (subseq (id bson-oid) 0 12))
-
-
 

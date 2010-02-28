@@ -4,6 +4,11 @@
   (:use #:common-lisp #:babel #:uuid #:usocket)
   (:export
 
+   ;;
+   :*mongo-default-port*
+   :*mongo-default-host*
+   :*mongo-default-db*
+
    ;; document
    :document
    :make-document

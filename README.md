@@ -184,6 +184,9 @@ license</a> so you can basically do with it whatever you want.
   <li><a href="#download">Download</a>
   <li><a href="#dictionary">The CL-MONGO dictionary</a>
     <ol>
+      <li><a href="#*mongo-default-db*"><code>*mongo-default-db*</code></a>
+      <li><a href="#*mongo-default-host*"><code>*mongo-default-host*</code></a>
+      <li><a href="#*mongo-default-port*"><code>*mongo-default-port*</code></a>
       <li><a href="#*repo-root*"><code>*repo-root*</code></a>
       <li><a href="#add-element"><code>add-element</code></a>
       <li><a href="#cwd"><code>cwd</code></a>
@@ -241,6 +244,42 @@ href="http://github.com/fons/cl-mongo">http://github.com/fons/cl-mongo</a>. The
 current version is 0.1.0.
 
 <br>&nbsp;<br><h3><a class=none name="dictionary">The CL-MONGO dictionary</a></h3>
+
+
+
+
+
+<p><br>[Special variable]<br><a class=none name='*mongo-default-db*'><b>*mongo-default-db*</b></a>
+<blockquote><br>
+
+database opened by the default connection
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Special variable]<br><a class=none name='*mongo-default-host*'><b>*mongo-default-host*</b></a>
+<blockquote><br>
+
+host for the default connection.
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Special variable]<br><a class=none name='*mongo-default-port*'><b>*mongo-default-port*</b></a>
+<blockquote><br>
+
+port for the default connection.
+
+</blockquote>
+
 
 
 
@@ -789,7 +828,7 @@ To close all open connections use the special symbol &#039;all
 <blockquote><br>
 
 Swap the connections identified by the name left and right. Typical use would be 
-like (swap-connection &#039;default &#039;alt. After the function call &#039;default will refer to the connection
+like (swap-connection :default :alt. After the function call :default will refer to the connection
 previously referred to with &#039;alt. The default connection is returned by (mongo) and is the default used in the
 api
 
