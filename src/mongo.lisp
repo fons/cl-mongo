@@ -28,7 +28,7 @@
 Each connection is a added to a global registry."))
 
 (defun mongo-registry()
-  (or *mongo-registry* (setf *mongo-registry* (make-hash-table))))
+  (or *mongo-registry* (setf *mongo-registry* (make-hash-table :test 'equalp))))
 
 (defun error-on-key-exists (key)
   (if (null (gethash key (mongo-registry))) 
@@ -128,10 +128,12 @@ To close all open connections use the special symbol 'all"))
 
 
 (defgeneric mongo-swap (left right) 
-  (:documentation "Swap the connections identified by the name left and right. Typical use would be 
-like (swap-connection :default :alt. After the function call :default will refer to the connection
-previously referred to with 'alt. The default connection is returned by (mongo) and is the default used in the
-api" ))
+  (:documentation "Swap the names of the left and right connections. Typical use would be 
+`(swap-connection :default :alt)`. After the function call :default will refer to the connection
+previously referred to as :alt. A connection named :default is returned by `(mongo)` and is the default used in the api. The connections are returned in the order they were passed in (but with the names
+swapped between them). To re-open a connection you can say 
+`(mongo-close (mongo-swap :default (mongo :host <newhost> :portid <portid> :name :temp)))` 
+and a new default connection is registered." ))
 
 (defmethod mongo-swap ( (left mongo) (right mongo) )
   (labels ((tmp-save (mongo) 
@@ -149,9 +151,11 @@ api" ))
 	       (remhash old-name  (mongo-registry))
 	       (rename (mongo :name tmp-key) old-name)
 	       (remhash tmp-key  (mongo-registry)))))
-    (swap-em left right)))
+    (swap-em left right)
+    (values  left right)))
+  
 
-(defmethod mongo-swap ( (left symbol) (right symbol) )
+(defmethod mongo-swap ( left  right  )
   (mongo-swap (mongo :name left) (mongo :name right))) 
 
 (defmethod mongo-swap ( (left (eql :default)) (right mongo) )

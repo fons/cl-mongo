@@ -75,7 +75,7 @@
   (format stream " [binary data of type ~A] " (type-id bson-binary)))
 
 (defmethod rep :after ( stream (bson-binary bson-binary-md5) )
-  (format stream " {~A}" (print-md5 (data bson-binary))))
+  (format stream " {~A}" (str-md5 (data bson-binary))))
 
 (defmethod print-object ((bson-binary-base bson-binary-base) stream)
   (progn 
