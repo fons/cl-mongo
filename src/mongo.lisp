@@ -4,8 +4,6 @@
   Connection...
 |#
 
-
-
 (defconstant +MONGO-PORT+ 27017)
 
 
@@ -164,11 +162,16 @@ and a new default connection is registered." ))
 (defgeneric mongo-message (mongo message &key ) 
   (:documentation "message to/from mongo.."))
 
+(defun test-for-readback (stream timeout) 
+  #+clisp (socket:socket-status stream timeout)
+  (declare (ignore timeout))
+  #-(or clisp) (listen stream))
+
 (defmethod mongo-message ( (mongo mongo) (message array) &key (timeout 5) )
   (write-sequence message (mongo-stream mongo))
   (force-output (mongo-stream mongo))
   (usocket:wait-for-input (list (socket mongo) ) :timeout timeout)
-  (if (listen (mongo-stream mongo))
+  (if (test-for-readback (mongo-stream mongo) timeout)
       (progn 
 	(let* ((reply  (make-octet-vector 1000 :init-fill 4 )) 
 	       (cursor (read-sequence reply (mongo-stream mongo) :start 0 :end 4))
@@ -178,6 +181,7 @@ and a new default connection is registered." ))
 	  (read-sequence reply (mongo-stream mongo) :start cursor)
 	  reply))
       nil))
+
 
 
 (defgeneric db.use ( db &key )
@@ -205,6 +209,7 @@ similar to cd -. "))
 (defun cwd ( &key (mongo nil) )
   "Show the current database."
   (db (or mongo (mongo))))
+
 
 (defun nwd ()
   " Show the database set by the `(db.use -)` command"

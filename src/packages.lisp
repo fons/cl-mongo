@@ -48,7 +48,7 @@
 
    ;; shell commands
    :nwd
-   :cwd
+   #+(or sbcl clisp allegro abcl)    :cwd
    :pp
    :iter
    :nd

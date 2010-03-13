@@ -42,22 +42,22 @@ mongo documentation.
 
 (defmethod db.find ( (collection string) (kv (eql :all)) 
 		    &key (mongo nil) (options 0) (skip 0) (selector nil) )
-  (call-next-method collection (bson-encode nil nil)
+  (db.find collection (bson-encode nil nil)
 		    :mongo mongo :options options :skip skip :limit 0 :selector selector ))
   
 (defmethod db.find ( (collection string) (kv integer) 
 		    &key (mongo nil) (options 0) (skip 0) (selector nil) )
-  (call-next-method collection (bson-encode nil nil)
-		    :mongo mongo :options options :skip skip :limit kv :selector selector ))
+  (db.find collection (bson-encode nil nil)
+	   :mongo mongo :options options :skip skip :limit kv :selector selector ))
 
 (defmethod db.find ( (collection string) (kv pair) 
 		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
-  (call-next-method collection (bson-encode (pair-key kv) (pair-value kv))
-		    :mongo mongo :options options :skip skip :limit limit :selector selector ))
+  (db.find collection (bson-encode (pair-key kv) (pair-value kv))
+	   :mongo mongo :options options :skip skip :limit limit :selector selector ))
 
 (defmethod db.find ( (collection string) (kv hash-table) 
 		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
-  (call-next-method collection (bson-encode-container kv)
+  (db.find collection (bson-encode-container kv)
 		    :mongo mongo :options options :skip skip :limit limit :selector selector ))
 
 
@@ -298,7 +298,7 @@ For most commands you can just uses the key-value shown in the mongo documentati
 
 (defmethod db.indexes (&key (mongo nil) )
   "Return all indexes in the database."
-  (db.find "system.indexes" 'all :mongo mongo))
+  (db.find "system.indexes" :all :mongo mongo))
 
 (defmethod db.collections (&key (mongo nil) )
   "Show all the collections in the current database."
@@ -307,7 +307,7 @@ For most commands you can just uses the key-value shown in the mongo documentati
 (defgeneric db.count ( collection selector &key )
   (:documentation "
 Count all the collections satifying the criterion set by the selector. 
-'all can be used to return a count of
+:all can be used to return a count of
 all the documents in the collection.
 "))
 
