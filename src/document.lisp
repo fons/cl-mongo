@@ -134,3 +134,16 @@ is supplied.
   (declare (ignore encoder) (ignore array) (ignore type) (ignore size) 
 	   (ignore size-supplied-p) (ignore array-supplied-p) )
   (bson-encode key (bson-encode-container value )))
+
+(defgeneric doc-elements (document) )
+
+(defmethod doc-elements ( (document hash-table) )
+  (let ((lst ()))
+    (with-hash-table-iterator (iterator document)
+      (dotimes (repeat (hash-table-count document))
+	(multiple-value-bind (exists-p key value) (iterator)
+	  (if exists-p (push key lst)))))
+    lst))
+
+(defmethod doc-elements ( (document document) )
+  (doc-elements (elements document)))
