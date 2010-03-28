@@ -11,6 +11,7 @@
 (defconstant +bson-data-boolean+  8   "bson boolean encoding")
 (defconstant +bson-data-date+     9   "bson date encoding")
 (defconstant +bson-data-null+     10  "bson null encoding")
+(defconstant +bson-data-regex+    11  "bson regex encoding")
 (defconstant +bson-data-code+     13  "bson code encoding")
 (defconstant +bson-data-int32+    16  "bson 32 bit int encoding")
 (defconstant +bson-data-long+     18  "bson 64 bit int encoding")
@@ -42,11 +43,12 @@ clashed with the encoding for booleans..
   (:documentation "encode a bson data element"))
 
 (defmethod bson-encode( (key string) (value t) &key array type encoder)
+  ;(format t "89here~%")
   (let* ((head  (fill-pointer array)))                         ; save the stack pointer
     (add-octets (int32-to-octet 0)    array)                   ; length, set to zero
     (add-octets (byte-to-octet  type) array)                   ; data element code
     (add-octets (string-to-null-terminated-octet key) array)   ; key
-    (funcall encoder array)                                    ; call type sepcifi encoder
+    (funcall encoder array)                                    ; call type specific encoder
     (add-octets (byte-to-octet 0) array)                       ; ending nul
     (set-octets head (int32-to-octet (- (length array) head) ) array)      ; set length    
     array))
@@ -136,21 +138,33 @@ clashed with the encoding for booleans..
       (call-next-method key value :array array :type +bson-data-boolean+ :encoder #'encode-value))))
 
 
-(defmethod bson-encode ( (key string) (value (eql nil))  &key (array nil) )
-  (let ((array (or array (make-octet-vector +default-array-size+))))
-    (labels ((encode-value (array)
-	       (add-octets (byte-to-octet (bool-to-byte value)) array)))    ; add value
-      (call-next-method key value :array array :type +bson-data-boolean+ :encoder #'encode-value))))
+;(defmethod bson-encode ( (key string) (value (eql nil))  &key (array nil) )
+;  (let ((array (or array (make-octet-vector +default-array-size+))))
+;    (labels ((encode-value (array)
+;	       (add-octets (byte-to-octet (bool-to-byte value)) array)))    ; add value
+;      (call-next-method key value :array array :type +bson-data-boolean+ :encoder #'encode-value))))
 
 ;
 ; nil is the opposite of t, and is already mapped as a boolean. Also, there a seperate encoder
 ; for symbols, so something like the below won't work (and propably doesn't need to )
 
 ;(defmethod bson-encode ( (key string) (value (eql 'void))  &key (array nil) )
-;  (let ((array (or array (make-octet-vector +default-array-size+))))
-;    (labels ((encode-value (array)
-;	       array))
-;      (call-next-method key value :array array :type +bson-data-null+ :encoder #'encode-value))))
+
+(defmethod bson-encode ( (key string) (value (eql nil))  &key (array nil) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
+    (labels ((encode-value (array)
+	       array))
+      (call-next-method key value :array array :type +bson-data-null+ :encoder #'encode-value))))
+
+(defmethod bson-encode ( (key string) (value bson-regex) &key (array nil) (type +bson-data-regex+) )
+  (let ((array (or array (make-octet-vector +default-array-size+))))
+    (labels ((encode-value (array)
+	       ;; regex string, null terminated
+	       (add-octets (string-to-null-terminated-octet (regex value)) array)
+               ;; options string, null terminated
+	       (add-octets (string-to-null-terminated-octet (options value) ) array)
+	       ))
+      (call-next-method key value :array array :type +bson-data-regex+ :encoder #'encode-value))))
 
 ;
 ; The array type is the parent class of other types like string. So see if a type and encoder is
@@ -301,11 +315,3 @@ clashed with the encoding for booleans..
 	  ;(push (list key value) accum))))
 	  (push value accum))))
     (values (reverse accum) rest)))
-
-
-
-
-
-
-  
-

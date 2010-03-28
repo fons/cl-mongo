@@ -81,10 +81,11 @@ Each connection is a added to a global registry."))
   (usocket:socket-stream (socket mongo)))
 
 (defgeneric mongo (&key host port db name)
-  (:documentation " This method returns the connection referred to by the name identifier from 
-the connection registry. The connection name is unique. 
-If no connection with that name exists, a new connection with the supplied or default host, port and db 
-parameters will be created. The default host is localhost; the default port is  27017; the default db is admin."))
+  (:documentation " This method returns the connection referred to by 
+the name identifier from the connection registry. The connection name is unique. 
+If no connection with that name exists, a new connection with the supplied or default 
+host, port and db parameters will be created. The default host is localhost; 
+the default port is  27017; the default db is admin."))
 
 (defmethod mongo ( &key (host *mongo-default-host*) (port *mongo-default-port*) 
 		  (db *mongo-default-db*) (name :default) )
@@ -100,8 +101,8 @@ parameters will be created. The default host is localhost; the default port is  
 (defgeneric mongo-close ( name ) 
   (:documentation "Close the connection to the mongo database. 
 The name should uniquely identify the connection to close.
-This is either a mongo object or the name the object is bound to in the connection registry. 
-To close all open connections use the special symbol 'all"))
+This is either a mongo object or the name the object is bound to 
+in the connection registry. To close all open connections use the special symbol 'all"))
 
 (defmethod mongo-close ( (mongo mongo) )
   (let ((name (name mongo)))
@@ -127,7 +128,7 @@ To close all open connections use the special symbol 'all"))
 
 (defgeneric mongo-swap (left right) 
   (:documentation "Swap the names of the left and right connections. Typical use would be 
-`(swap-connection :default :alt)`. After the function call :default will refer to the connection
+`(mongo-swap :default :alt)`. After the function call :default will refer to the connection
 previously referred to as :alt. A connection named :default is returned by `(mongo)` and is the default used in the api. The connections are returned in the order they were passed in (but with the names
 swapped between them). To re-open a connection you can say 
 `(mongo-close (mongo-swap :default (mongo :host <newhost> :portid <portid> :name :temp)))` 
@@ -162,12 +163,20 @@ and a new default connection is registered." ))
 (defgeneric mongo-message (mongo message &key ) 
   (:documentation "message to/from mongo.."))
 
-(defun test-for-readback (stream timeout) 
-  #+clisp (socket:socket-status stream timeout)
+(defun test-for-readback* (stream timeout) 
   (declare (ignore timeout))
-  #-(or clisp) (listen stream))
+  (listen stream))
 
-(defmethod mongo-message ( (mongo mongo) (message array) &key (timeout 5) )
+#+clisp (defun test-for-readback-clisp (stream timeout) 
+  (multiple-value-bind (direction status) (socket:socket-status (cons stream  :INPUT)  timeout)
+    (declare (ignore status))
+    (when direction t)))
+  
+(defun test-for-readback (stream timeout) 
+  #-(or clisp) (test-for-readback* stream timeout)
+  #+clisp (test-for-readback-clisp stream timeout))
+
+(defmethod mongo-message ( (mongo mongo) (message array) &key (timeout 5) ) 
   (write-sequence message (mongo-stream mongo))
   (force-output (mongo-stream mongo))
   (usocket:wait-for-input (list (socket mongo) ) :timeout timeout)
@@ -182,11 +191,8 @@ and a new default connection is registered." ))
 	  reply))
       nil))
 
-
-
 (defgeneric db.use ( db &key )
-  (:documentation "
-Use a database on the mongo server. Opens a connection if one isn't already 
+  (:documentation "Use a database on the mongo server. Opens a connection if one isn't already 
 established. (db.use -) can be used to go to a previosuly visited database, 
 similar to cd -. "))
 
@@ -223,3 +229,62 @@ similar to cd -. "))
 	  (declare (ignore value))
 	  (when exists-p (push key lst)))))
     (nreverse lst)))
+
+(defun connection? (name)
+  (if (car (multiple-value-list (gethash name (mongo-registry)))) t nil))
+
+(defun default? ()
+  (connection? :default))
+
+(defun switch-default-connection (name &key (host "localhost") (db "test") (port +MONGO-PORT+) )
+  (if (default?) 
+      (mongo-swap :default (make-mongo :host host :db db :port port :name name ))
+      (make-mongo :host host :db db :port port :name :default)))
+
+(defun restore-default-connection (name)
+  (if (connection? name) 
+      (mongo-close (mongo-swap :default name))
+      (mongo-close :default)))
+
+#|
+(defmacro with-mongo-connection ( (var . args) &rest body)
+  "Creates a connection to a mongodb, binds it to var and evaluates the body form.
+  args is passed on to make-mongo when the connection is created.
+  Caller should reference var in the body form where appropriate.."
+  (let ((connection-name (gensym)))
+    `(let ((,connection-name (gensym)))
+       (unwind-protect
+	    (multiple-value-prog1 
+		(let ((,var (switch-default-connection ,connection-name ,@args)))
+		  ,@body))
+	 (restore-default-connection ,connection-name)))))
+|#
+
+(defmacro with-mongo-connection ( args &rest body)
+  "Creates a connection to a mongodb, makes it the default connection 
+  and evaluates the body form.
+  args uses the same keyword set as mongo (:db. :localhost :port)
+  args is passed on to make-mongo when the connection is created."
+  (let ((connection-name (gensym)))
+    `(let ((,connection-name (gensym)))
+       (unwind-protect
+	    (multiple-value-prog1 
+		(progn (switch-default-connection ,connection-name ,@args)
+		  ,@body))
+	 (restore-default-connection ,connection-name)))))
+
+#|
+(with-mongo-connection (mongo :db "test")
+		       (pp (iter (db.find "foo" :all :mongo mongo))))
+
+
+(with-mongo-connection (mongo)
+		       (format t "-> mongo ~A~%" mongo))
+
+(with-mongo-connection (mongo)
+		       (show :connections))
+
+(with-mongo-connection (mongo :db "test")
+		       (pp (iter (db.find "foo" :all :mongo mongo) :mongo mongo)))
+		       
+|#

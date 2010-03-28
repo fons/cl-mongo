@@ -5,33 +5,43 @@
 |# 
 
 (defun docs ( result )
-"
-Stop the iterator (if any) and return the list of documents returned by the query. 
-Typical ue would be in conjunction with db.find like so (docs (iter (db.find 'foo' 'll)))
-"
+  "Stop the iterator (if any) and return the list of documents returned by the query. 
+Typical ue would be in conjunction with db.find like so (docs (iter (db.find 'foo' 'll)))"
   (cadr (db.stop result)))
   
 (defun iter ( result &key (mongo nil) (max-per-call 0) )
-"
-Exhaustively iterate through a query. The maximum number of responses 
-per query can be specified using the max-per-call keyword.
-
-"
+"Exhaustively iterate through a query. The maximum number of responses 
+per query can be specified using the max-per-call keyword."
     (loop 
        (setf result (db.iter result :mongo mongo :limit max-per-call ) )
        (when (zerop (db.iterator result) ) (return result) )))
 
-(defun rm (result &key (mongo nil) )
-"
-Delete all the documents returned by a query. This is not an efficient 
+(defun rm* (result &key (mongo nil) )
+  "Delete all the documents returned by a query. This is not an efficient 
 way of deleting documents as it invloves multiple trips to the server.
 Mongo allows for execution of java-script on the server side, which provides
 an alternative. Typical use would be (rm (iter (db.find 'foo' (kv 'key' 1)))),
-which deletes all documents in foo, with field key equal to 1.
-"
+which deletes all documents in foo, with field key equal to 1."
 (multiple-value-bind (iterator collection docs) (db.iterator result) 
   (db.stop iterator :mongo mongo)
   (db.delete collection docs)))
+;;
+;; rm is is set up to handle insert/delete race conditions which may appear..
+;;
+(defun rm (collection query &key (mongo nil) )
+  "Delete all the documents returned by a query. This is not an efficient 
+way of deleting documents as it invloves multiple trips to the server.
+Mongo allows for execution of java-script on the server side, which provides
+an alternative. Typical use would be (rm (iter (db.find 'foo' (kv 'key' 1)))),
+which deletes all documents in foo, with field key equal to 1."
+  (labels ((server-count() 
+	     (get-element "n" (car (docs (db.count collection :all :mongo mongo)))))
+	   (delete-docs ()
+	     (db.delete collection (docs (iter (db.find collection query :mongo mongo))) :mongo mongo)))
+    (do ((line (server-count)
+	       (server-count)))
+	((zerop line ))
+      (delete-docs))))
 
 (defgeneric pp (result &key)
   (:documentation "
@@ -170,6 +180,15 @@ the profile and more. Things is a keyword so (show 'users) will show all users."
 (defmethod show :after ( (things (eql :databases)) &key)
   (db.use -))
 
+(defmethod show ( (things (eql :buildinfo)) &key (order '("version" "sysInfo" "gitVersion" :rest)) )
+  (show (lambda () (db.run-command :buildinfo)) :order order :nl t))
+
+(defmethod show :before ( (things (eql :buildinfo)) &key)
+  (db.use "admin"))
+
+(defmethod show :after ( (things (eql :buildinfo)) &key)
+  (db.use -))
+
 (defmethod show ( (things (eql :users)) &key (order '("user" "pwd") ))
   (show (lambda () (db.find "system.users" 'all)) :order order))
 
@@ -179,14 +198,14 @@ the profile and more. Things is a keyword so (show 'users) will show all users."
 (defmethod show ( (things (eql :assertinfo)) &key (order '(:rest)))
   (show (lambda () (db.run-command things)) :order order :nl t))
 
+
+(defmethod show ( (things (eql :lasterror)) &key (order '(:rest)))
+  (show (lambda () (db.run-command :getlasterror)) :order order :msg "last error : "))
+
+(defmethod show ( (things (eql :preverror)) &key (order '(:rest)))
+  (show (lambda () (db.run-command :getpreverror)) :order order :msg "last error : "))
+
 (defmethod show ( (things (eql :errors)) &key (order '(:rest)))
-  (show (lambda () (db.run-command :getlasterror)) :order order :msg "last error : ")
-  (show (lambda () (db.run-command :getpreverror)) :order order :msg "prev error : "))
+  (show :lasterror)
+  (show :preverror)) 
 
-(defgeneric exp-test (arg))
-
-(defmethod exp-test ( (arg (eql :hello)) )
-  (format t "hello"))
-
-(defmethod exp-test ( (arg string) )
-  (format t "hello : ~A" arg))

@@ -19,9 +19,57 @@
 	     (:constructor pair (key value)))
   key value)
 
-(defgeneric kv (a b &rest rest) 
-  (:documentation "
-This a helper function for key-value pairs and sets of key-value pairs.  
+(defclass kv-container () 
+  ((container :initform (make-array 2 :fill-pointer 0 :adjustable t) :accessor container)))
+
+(defmethod print-object ( (kv-container kv-container) stream)
+  (format stream "kv-container : ~A " (container kv-container)))
+
+(defun make-kv-container ()
+  (make-instance 'kv-container ))
+
+(defgeneric kv-container-push (el cont))
+
+(defmethod kv-container-push ( (el t)  (kv-container kv-container) )
+  (vector-push-extend el (container kv-container)))
+
+(defgeneric kv-container-pop (cont))
+
+(defmethod kv-container-pop ( (kv-container kv-container) )
+  (unless (eql 0 (fill-pointer (container kv-container))) (vector-pop (container kv-container))))
+
+(defgeneric kv-container-length (cont) )
+
+(defmethod kv-container-length ( (kv-container kv-container) )
+  (length (container kv-container)))
+
+(defgeneric kv-container-aref (cont index ))
+
+(defmethod kv-container-aref ( (index integer) (kv-container kv-container) )
+  (aref (container kv-container) index ))
+
+(defgeneric kv-container-kv (index cont))
+
+(defmethod kv-container-kv ((index integer) (kv-container kv-container) )
+  (let (( pair (kv-container-aref index kv-container)))
+    (values (pair-key pair) (pair-value pair))))
+
+(defgeneric kv-container-add (el container))
+
+(defmethod kv-container-add ( (el pair) (kv-container kv-container) )
+  (kv-container-push el kv-container)
+  kv-container)
+
+(defmethod kv-container-add ( (el kv-container) (kv-container kv-container) )
+  (labels ((add (contb)
+	     (dotimes (index (kv-container-length contb ))
+	       (let ((el (kv-container-aref index contb)))
+		 (when el) (kv-container-push el kv-container)))
+	     kv-container))
+    (add el)))
+
+(defgeneric kv (a &rest rest) 
+  (:documentation " This a helper function for key-value pairs and sets of key-value pairs.  
 In a key-value pair like (kv key value) the key has to be a string and the
 value something which is serializable. 
 key-value pairs can be combined using kv as well : (kv (kv key1 val1) (kv key2 val2)).
@@ -29,59 +77,33 @@ This combination of key-value pairs is equivalent to a document without a unique
 The server will assign a unique is if a list of key-value pairs is saved."))
 
 
-(defmethod kv ( (a (eql nil) ) (b (eql nil)) &rest rest)
-  (declare (ignore rest))
-  (pair nil nil))
+(defmethod kv ( (a (eql nil) ) &rest rest)
+  (pair nil (car rest)))
 
 ;; basically b can be anything with
 ;; an encoder..
 
-(defmethod kv ( (a string) b &rest rest)
+(defmethod kv ( (a string) &rest rest)
+  (pair a (car rest)))
+
+(defmethod kv ( (a symbol) &rest rest)
   (declare (ignore rest))
-  (pair a b))
+  (pair (string-downcase a) (car rest)))
 
-(defmethod kv ( (a symbol) b &rest rest)
-  (declare (ignore rest))
-  (pair (string-downcase a) b))
-
-
-(defmethod kv ( (a pair) (b pair) &rest rest)
-  (let ((ht (make-hash-table :test 'equal)))
-    (setf (gethash (pair-key a) ht) (pair-value a))
-    (setf (gethash (pair-key b) ht) (pair-value b))
-    (dolist (el rest)
-      (setf (gethash (pair-key el) ht) (pair-value el)))
-    ht))
-
-;this allows for (kv (kv "a" b) nil ("l" k) ) where
-; the nil maybe the result of some test. it's skipped..
-(defmethod kv ( (a pair) (b pair) &rest rest)
-  (let ((ht (make-hash-table :test 'equal)))
-    (setf (gethash (pair-key a) ht) (pair-value a))
-    (setf (gethash (pair-key b) ht) (pair-value b))
-    (dolist (el rest)
-      (when el (setf (gethash (pair-key el) ht) (pair-value el))))
-    ht))
-
-;this adds more kv's to an existing container..
-;I don't check the type of the rest variables, 
-;assuming they're all pairs..
-(defmethod kv ( (ht hash-table) (b pair) &rest rest )
-  (setf (gethash (pair-key b) ht) (pair-value b))
+(defmethod kv ( (kv-container kv-container) &rest rest )
   (dolist (el rest)
-    (setf (gethash (pair-key el) ht) (pair-value el)))
-  ht)
+    (when el (kv-container-add el kv-container)))
+  kv-container)
 
-(defun bson-encode-pair ( kv )
-  (bson-encode (pair-key kv) (pair-value kv)))
+(defmethod kv ( (a pair) &rest rest)
+  (let ((kvc (make-kv-container) ))
+    (kv-container-add a kvc)
+    (dolist (el rest)
+      (when el (kv-container-add el kvc)))
+    kvc))
+    
 
-(defmethod bson-encode ( (key string) (value pair) &key (array nil array-supplied-p) 
-			(size 10 size-supplied-p) 
-			(type nil) (encoder nil))
-  (declare (ignore encoder) (ignore array) (ignore type) (ignore size) 
-	   (ignore size-supplied-p) (ignore array-supplied-p) )
-  (bson-encode key (bson-encode-pair value)))
-
+;(kv (kv "query" (kv nil nil)) (kv "orderby" (kv "k" 1)))
 
 (defgeneric kv->doc ( kv )
   (:documentation "turn a pair of key/value pairs into a document"))
@@ -89,6 +111,12 @@ The server will assign a unique is if a list of key-value pairs is saved."))
 (defmethod kv->doc ( (kv pair) ) 
   (let ((doc (make-document)))
     (add-element (pair-key kv) (pair-value kv) doc)))
+
+(defmethod kv->doc ( (kv-container kv-container) ) 
+  (let ((doc (make-document)))
+    (dotimes (index (kv-container-length kv-container))
+      (let ((kv (kv-container-aref index kv-container)))
+	(add-element (pair-key kv) (pair-value kv) doc)))))
 
 (defmethod kv->doc ( (kv hash-table) ) 
   (ht->document kv))
@@ -103,4 +131,7 @@ The server will assign a unique is if a list of key-value pairs is saved."))
 
 (defmethod kv->ht ( (kv hash-table) )
   kv)
+
+(defmethod kv->ht ( (kv-container kv-container) )
+  (elements (kv->doc kv-container)))
 

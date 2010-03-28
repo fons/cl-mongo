@@ -1,7 +1,7 @@
 (in-package #:cl-user)
 
 (defpackage #:cl-mongo
-  (:use #:common-lisp #:babel #:uuid #:usocket)
+  (:use #:common-lisp #:babel #:uuid #:usocket )
   (:export
 
    ;;
@@ -22,7 +22,7 @@
    :mongo-show
    :mongo-close
    :mongo-swap
-
+   :with-mongo-connection
    :kv
    
    :db.create-collection
@@ -31,6 +31,7 @@
    :db.update
    :db.save
    :db.find
+   :db.sort
    :db.next
    :db.iter
    :db.stop
@@ -56,8 +57,9 @@
    :docs
    :now
    :show
-
-   :exp-test
+   ;; syntax expansion
+   :$+
+   :$-
 
    ;; documentation generator
    :generate-readme

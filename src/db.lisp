@@ -25,25 +25,29 @@ Since the default value of the limit is one, db.find by default is the equivalan
 mongo documentation.
 "))
 
-(defmethod db.find ( (collection symbol) (kv t) 
-		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
-  (db.find (string-downcase collection) kv 
-		    :mongo mongo :options options :skip skip :limit limit :selector selector ))
-
 (defmethod db.find ( (collection string) (kv t) 
 		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
   (let ((mongo (or mongo (mongo))))
     (labels ((query ()
 	       (mongo-message mongo (mongo-query 
 				     (full-collection-name mongo collection) kv
-				     :limit limit :skip skip :selector selector :options options))))
+				     :limit limit 
+				     :skip skip 
+				     :selector (bson-encode-container (expand-selector selector))
+				     :options options))))
       (multiple-value-bind (header docs) (mongo-reply (query) :finalize 'to-document)
 	(list (append header (list collection)) docs)))))
 
+(defmethod db.find ( (collection symbol) (kv t) 
+		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
+  (db.find (string-downcase collection) kv 
+		    :mongo mongo :options options :skip skip :limit limit :selector selector ))
+
+
 (defmethod db.find ( (collection string) (kv (eql :all)) 
-		    &key (mongo nil) (options 0) (skip 0) (selector nil) )
-  (db.find collection (bson-encode nil nil)
-		    :mongo mongo :options options :skip skip :limit 0 :selector selector ))
+		    &key (mongo nil) (options 0) (skip 0) (limit 0) (selector nil) )
+  (db.find collection (bson-encode "query" (kv nil nil))
+	   :mongo mongo :options options :skip skip :limit limit :selector selector ))
   
 (defmethod db.find ( (collection string) (kv integer) 
 		    &key (mongo nil) (options 0) (skip 0) (selector nil) )
@@ -59,6 +63,23 @@ mongo documentation.
 		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
   (db.find collection (bson-encode-container kv)
 		    :mongo mongo :options options :skip skip :limit limit :selector selector ))
+
+(defmethod db.find ( (collection string) (kv kv-container) 
+		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
+  (db.find collection (bson-encode-container kv)
+		    :mongo mongo :options options :skip skip :limit limit :selector selector ))
+
+(defmacro db.sort (collection query &rest args) 
+  "sort macro : Takes the same arguments and keywords as db.find but converts the query 
+   so it works as a sort. use the :field keyword to select the field to sort on.
+   Set :asc to nil to reverse the sort order"
+  (let ((kv-query  (gensym)))
+    `(destructuring-bind (&key (selector nil) (mongo nil) 
+			       (limit 0) (skip 0) (options 0) (field nil) (asc t))
+	 (list ,@args)
+       (let ((kv-query  (or (and (eql ,query :all) (kv nil nil)) ,query)))
+	 (db.find ,collection (kv (kv "query" kv-query) (kv "orderby" (kv field (if asc 1 -1) )))
+		  :limit limit :mongo mongo :skip skip :selector selector :options options)))))
 
 
 (defgeneric db.update ( collection selector new-document &key )
@@ -175,7 +196,8 @@ You can enter a list of documents. In that the server will be contacted to delet
 It may be more efficient to run a delete script on he server side.
 "))
 
-(defmethod db.delete ( (collection (eql nil)) (document (eql nil)) &key))
+(defmethod db.delete ( (collection t) (document (eql nil)) &key (mongo nil) ))
+
 
 (defmethod db.delete ( (collection string) (document document) &key (mongo nil))
   (let ((mongo (or mongo (mongo) )))
@@ -287,6 +309,10 @@ For most commands you can just uses the key-value shown in the mongo documentati
   (assert (not (null collection)))
   (db.find "$cmd" (kv->ht (kv (kv "deleteIndexes" collection) (kv "index" index))) :mongo mongo))
 
+(defmethod db.run-command ( (cmd (eql :drop) ) &key (mongo nil) (collection nil) (index "*") )
+  (assert (not (null collection)))
+  (db.find "$cmd" (kv->ht (kv "drop" collection) ) :mongo mongo))
+
 
 #|
    
@@ -315,7 +341,7 @@ all the documents in the collection.
   (db.find "$cmd" (kv (kv "count" collection) (kv "query" selector) (kv "fields" nil)) :mongo mongo :limit 1))
 
 (defmethod db.count ( (collection t) (selector (eql :all) ) &key (mongo nil) )
-  (call-next-method collection nil :mongo mongo))
+  (db.count collection nil :mongo mongo))
 
 (defmethod db.count ( (collection t) (selector pair ) &key (mongo nil) )
   (call-next-method collection (kv->ht selector) :mongo mongo))
@@ -357,4 +383,5 @@ all the documents in the collection.
 	 (retval (get-element "ok" (car (docs (db.find "$cmd" request :limit 1 :mongo mongo))))))
     (if retval t nil)))
 
-	 
+;;(db.find "$cmd" (kv (kv "count" "foo")  (kv "query" (kv nil nil)) (kv "fields" (kv nil nil))))
+;;(db.find "foo" (kv (kv "query" (kv nil nil)) (kv "orderby" (kv "k" 1)) ) :limit 0)
