@@ -70,7 +70,7 @@
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     (let* ((documents (docs (iter (db.find "foo" :all :limit 1))))
 	   (index (get-element "index-this" (car documents))))
-      (assert-equal 1 (length documents))
+      (assert-equal 1 (length documents) "get first document")
       (assert-equal 0 index "assuming first document has index 0")))
 ;;; test of skip; skip the first (size - floor (* size 0.5))
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
@@ -80,13 +80,13 @@
 	   (last-index  (get-element "index-this" (car (nreverse documents))))
 	   (expected-count (- size skip))
 	   (expected-last-index (decf size)))
-      (assert-equal expected-count (length documents))
+      (assert-equal expected-count (length documents) "skip test")
       (assert-equal skip first-index "assuming first document has index 0")
       ;;(mapcar (lambda (d) (format t "~A;" (get-element "index-this" d))) (nreverse documents))
       (assert-equal expected-last-index last-index "assuming first document has index 0")))
   (reset-test-collection collection 0))
 
-(defun db-sort-regression (&optional (collection *test-collection*) &key (size 5))
+(defun db.sort-regression (&optional (collection *test-collection*) &key (size 5))
   (reset-test-collection collection size)  
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     (let* ((ret (docs (iter (db.sort collection :all :field "k" :selector "k" ))))
@@ -103,7 +103,7 @@
 (defun map-reduce-truth (tv l)
   (reduce (lambda (x y) (and x y) ) (mapcar (lambda (x) (assert-eql tv (when x t) x)) l)))
 	
-(defun db-find-selector-regression (&optional (collection *test-collection*) &key (size 5))
+(defun db.find-selector-regression (&optional (collection *test-collection*) &key (size 5))
   (reset-test-collection collection size)
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     (let* ((ret (docs (iter (db.find collection :all :selector ($+ "k" "l") ))))
@@ -128,7 +128,50 @@
       (format t "elem : ~A ~%" excl)
       (assert-eql t (map-reduce-truth t excl))))
   (reset-test-collection collection 0))
-    
+
+(defun test-filter(fun lst)
+  (let ((l))
+    (dolist (obj lst)
+      (when (funcall fun obj) (push obj l)))
+    (nreverse l)))
+
+(defun db.find-advanced-query-regression(&key (collection *test-collection*)  (size 19))
+  (reset-test-collection collection size)
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+  (labels ((klst (arg)
+	     (let* ((ret (docs (iter (db.find collection arg :limit 0 :selector ($+ "k") ))))
+		    (lst  (mapcar (lambda (d) (get-element "k" d)) ret)))
+	       lst)))
+    (let*  ((lst (klst :all)) 
+	    (_min  (reduce #'min lst))
+	    (_max  (reduce #'max lst))
+	    (_mid  (* 0.5 (+ _min _max))))
+      (assert-eql (length (klst ($> "k" _mid) ))
+		  (length (test-filter (lambda (i) (> i _mid)) lst))
+		  "testing >")
+      (assert-eql (length (klst ($< "k" _mid) ))
+		  (length (test-filter (lambda (i) (< i _mid)) lst))
+		  "testing >")
+      (assert-eql (length (klst ($>= ("k" _mid) ) ))
+		  (length (test-filter (lambda (i) (>= i _mid)) lst))
+		  "testing >")
+
+      (assert-eql (length (klst ($<= ("k" _mid)) ))
+		  (length (test-filter (lambda (i) (<= i _mid)) lst))
+		  "testing >")
+      (assert-eql (length (klst ($!= ("k" _min)) ))
+		  (length (test-filter (lambda (i) (not (eql i _min))) lst))
+		  "testing !=")
+#|
+
+      (assert-eql (length (klst ($mod ("k" (10 2))) ))
+		  (length (test-filter (lambda (i) (eql 1 (mod i 10))) lst))
+		  "testing !=")
+|#  
+    ))
+  (reset-test-collection collection 0)))
+
+
 ;;--------------------------------------------------------------------------
 
 (defun test-delete (&optional (collection *test-collection*))
@@ -137,11 +180,11 @@
 
 (defun test-query-field-selection (&optional (collection *test-collection*))
   (dolist (size (geometric-range 5 5 ))
-    (find-doc-by-field *test-collection* :size size)))
+    (find-doc-by-field collection :size size)))
 
 (defun test-document-count (&optional (collection *test-collection*))
   (dolist (size (geometric-range 5 5 ))
-    (count-documents *test-collection* :size size)))
+    (count-documents collection :size size)))
 
 (defun test-find-all (&optional (collection *test-collection*))
   (dolist (size (geometric-range 2 4 5 ))  
@@ -149,11 +192,11 @@
 
 (defun test-sort (&optional (collection *test-collection*))
   (dolist (size (geometric-range 2 4))  
-    (db-sort-regression  collection :size (* 10 size)))) 
+    (db.sort-regression  collection :size (* 10 size)))) 
 
 (defun test-find-selector (&optional (collection *test-collection*))
   (dolist (size (geometric-range 2 4))  
-    (db-find-selector-regression collection :size size)))
+    (db.find-selector-regression collection :size size)))
 
 ;;;;;;;;;;;;;
 

@@ -57,9 +57,22 @@
    :docs
    :now
    :show
+
    ;; syntax expansion
    :$+
    :$-
+   :$>
+   :$>=
+   :$<
+   :$<=
+   :$!=
+   :$in
+   :$!in
+   :$mod
+   :$all
+   :$exists
+   :$/
+   :$not 
 
    ;; documentation generator
    :generate-readme
