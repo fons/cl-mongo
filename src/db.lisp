@@ -307,7 +307,7 @@ For most commands you can just uses the key-value shown in the mongo documentati
 
 (defmethod db.run-command ( (cmd (eql :deleteindexes) ) &key (mongo nil) (collection nil) (index "*") )
   (assert (not (null collection)))
-  (db.find "$cmd" (kv->ht (kv (kv "deleteIndexes" collection) (kv "index" index))) :mongo mongo))
+  (db.find "$cmd" (kv (kv "deleteIndexes" collection) (kv "index" index)) :mongo mongo))
 
 (defmethod db.run-command ( (cmd (eql :drop) ) &key (mongo nil) (collection nil) (index "*") )
   (assert (not (null collection)))

@@ -59,6 +59,7 @@
    :show
 
    ;; syntax expansion
+   :$
    :$+
    :$-
    :$>
@@ -73,6 +74,8 @@
    :$exists
    :$/
    :$not 
+   :$em
+   :$where
 
    ;; documentation generator
    :generate-readme

@@ -1,12 +1,13 @@
 (in-package :cl-mongo)
 
-;($exp (1 2) ( 3 4)) --> ((1 2) (3 4)))
-
-(defmacro $exp (&rest args)
-  (case (length args)
-    (0  '())
-    (1  `(list (list ,@(car args))))
-    (t  `(cons (list ,@(car args)) ($exp ,@(cdr args))))))
+(defmacro $exp+ (&rest args)
+  (cond (  (zerop (length args) )  '())
+	(  (symbolp (car args) ) (cond ( (fboundp (car args)) `(progn ,args))
+				       ( (boundp (car args)) `(list ,(car args) ,@(cdr args)))
+				       ( t                   `(list ,(car args) ,@(cdr args)))))
+	(  (atom  (car args) ) `(cons ,(car args) ($exp+ ,@(cdr args))))
+	(  (consp (car args) ) `(cons ($exp+ ,@(car args) ) ($exp+ ,@(cdr args))))
+	(t (format t "can only handle atoms and cons")))) 
 
 
 (defmacro construct-$+- (val arg &rest args)
@@ -40,13 +41,13 @@
   (if (cdr lst) 
       lst
       (unwrap (car lst))))
-
+;    `(multiple-value-bind (,keys ,val) (op-split (unwrap (list ,@args)))
 (defmacro $op* (op &rest args)
   (let ((keys (gensym))
 	(key  (gensym))
 	(kvc  (gensym))
 	(val  (gensym)))
-    `(multiple-value-bind (,keys ,val) (op-split (unwrap (list ,@args)))
+    `(multiple-value-bind (,keys ,val) (op-split (unwrap (list ($exp+ ,@args))))
        (let ((,kvc (kv (car ,keys) (kv ,op ,val))))
 	 (dolist (,key (cdr ,keys))
 	   (setf ,kvc (kv ,kvc (kv ,key (kv ,op ,val)))))
@@ -57,8 +58,11 @@
   (reduce (lambda (x y) (kv x y) ) (mapcar (lambda (l) ($op* op l) ) lst)))
 
 (defmacro $op (op &rest args)
-  (cond ( (consp (car args) ) `(map-reduce-op ,op ($exp ,@args)))
+  (cond ( (consp (car args) ) `(map-reduce-op ,op ($exp+ ,@args)))
 	( t                   `($op* ,op ,@args))))
+
+(defmacro $ (&rest args)
+  `(kv ,@args))
 
 (defmacro $> (&rest args)
   `($op "$gt" ,@args))
@@ -90,6 +94,9 @@
 (defmacro $exists (&rest args)
   `($op "$exists" ,@args))
 
+(defmacro $size (&rest args)
+  `($op "$size" ,@args))
+
 (defun empty-str(str)
   (if (and str (zerop (length str))) 
       (format nil "\"\"")
@@ -97,13 +104,31 @@
 
 (defmacro $/ (regex options)
   `(make-bson-regex (empty-str ,regex) ,options))
-
+  
 (defmacro $not (&rest args)
   `(let ((result ,@args))
      (kv (pair-key result) (kv "$not" (pair-value result)))))
 
-;($not ($mod "k" (10 2)))
-;($op "$gte" "k" "l" 5)
-;($op "$gte" '("k" "l" 5))
-;($tbd op ("l" "m" 60) ("k" 3))
+(defmacro $kv-eval (&rest args)
+  `(kv ,@args))
+
+(defmacro $em (array &rest args)
+  `(kv ,array (kv "$elemMatch" (kv ,@args))))
+
+(defmacro $where (&rest args)
+  `(kv "$where" ,@args))
+
+#|
+
+($index "foo" "field" :unique :asc)
+
+($index+ "foo" ("field1" :unique :asc) ("field2") )
+($index+ "foo" ("field1" :unique :asc :dropDups ) ("field2") )
+
+($index- "foo" *)
+
+($index- "foo" *)
+
+
+|#
 
