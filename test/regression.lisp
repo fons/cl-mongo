@@ -264,6 +264,41 @@
     ))
   (reset-test-collection collection 0)))
 
+(defun test-serialization (&key (collection *test-collection*)  (size 23) (wait 1) )
+  (declare (ignore wait size))
+  (reset-test-collection collection 0)
+  (send-doc-in-doc-in-doc collection)
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (pp (db.find collection :all))))
+
+(defun test-indexing (&key (collection *test-collection*)  (size 23) (wait 1) )
+  (reset-test-collection collection size wait)
+  ($index collection :rm :all)
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    ($index collection :asc "index_this2")
+    (insert-lots collection size)
+    (sleep wait)
+    (run-test "testing indexing on index_this2; simple, should double the doc count "
+	      (* 2 size) 
+	      (get-element "n" (car (docs (db.count "foo" :all))))))
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    ;;this will fail to install b/c there are duplicates
+    ($index collection :unique :desc ("index_this2") )
+    ($index collection :show)
+    (insert-lots collection size)
+    (sleep wait)
+    (run-test "testing unique index on index_this2, desc; should increase count"
+	      (force-double-float (* 3 size))
+	      (get-element "n" (car (docs (db.count "foo" :all))))))
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    ($index collection :unique :drop-duplicates :desc ("index_this2") )
+    ($index collection :show)
+    (insert-lots collection size)
+    (sleep wait)
+    (run-test "testing unique index on index_this2, desc with duplicates dropped; should decrease count"
+	      (force-double-float size)
+	      (get-element "n" (car (docs (db.count "foo" :all))))))
+  (reset-test-collection collection 0))
 
 ;;--------------------------------------------------------------------------
 
@@ -312,4 +347,9 @@
   (with-test-package "advanced query regression elements"
     (db.find-advanced-query-regression :collection collection :size size :wait wait))
   (with-test-package "advanced query regression elements; part 2"
-    (db.find-advanced-query-regression-2 :collection collection :size size :wait wait)))
+    (db.find-advanced-query-regression-2 :collection collection :size size :wait wait))
+  (with-test-package "test indexing"
+    (test-indexing :collection collection :size size :wait wait))
+  (with-test-package "test serialization; inspect visually"
+    (test-serialization :collection collection :size size :wait wait)))
+

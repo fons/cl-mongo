@@ -76,6 +76,7 @@
    :$not 
    :$em
    :$where
+   :$index 
 
    ;; documentation generator
    :generate-readme

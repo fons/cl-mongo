@@ -3,7 +3,7 @@
 (defmacro $exp+ (&rest args)
   (cond (  (zerop (length args) )  '())
 	(  (symbolp (car args) ) (cond ( (fboundp (car args)) `(progn ,args))
-				       ( (boundp (car args)) `(list ,(car args) ,@(cdr args)))
+				       ( (boundp (car args)) `(cons ,(car args) ($exp+ ,@(cdr args))))
 				       ( t                   `(list ,(car args) ,@(cdr args)))))
 	(  (atom  (car args) ) `(cons ,(car args) ($exp+ ,@(cdr args))))
 	(  (consp (car args) ) `(cons ($exp+ ,@(car args) ) ($exp+ ,@(cdr args))))
@@ -38,9 +38,10 @@
       (op-split (cdr lst) (cons (car lst) accum))))
 
 (defun unwrap (lst)
-  (if (cdr lst) 
+  (if (or (atom lst) (cdr lst) )
       lst
       (unwrap (car lst))))
+
 ;    `(multiple-value-bind (,keys ,val) (op-split (unwrap (list ,@args)))
 (defmacro $op* (op &rest args)
   (let ((keys (gensym))
@@ -60,6 +61,7 @@
 (defmacro $op (op &rest args)
   (cond ( (consp (car args) ) `(map-reduce-op ,op ($exp+ ,@args)))
 	( t                   `($op* ,op ,@args))))
+
 
 (defmacro $ (&rest args)
   `(kv ,@args))
@@ -121,14 +123,58 @@
 #|
 
 ($index "foo" "field" :unique :asc)
-
 ($index+ "foo" ("field1" :unique :asc) ("field2") )
 ($index+ "foo" ("field1" :unique :asc :dropDups ) ("field2") )
-
 ($index- "foo" *)
-
 ($index- "foo" *)
-
 
 |#
+;(set-keys (list :asc :desc :drop-dups))
+
+(defmacro set-keys (&rest args)
+  `(cond ( (null ,@args) nil)
+	 ( t  (reduce (lambda (u v) (append u v)) (mapcar (lambda (x) (list x t)) ,@args)))))
+
+;($index "foo" :unique :drop-duplicates :asc ("k" "l") :desc ("m" "n") )
+;($index "foo" :asc "k"   ) 
+;($index "foo" :rm ....)
+;($index "foo" :show)
+
+
+;  `(destructuring-bind (f1 f1 &key asc desc) (unwrap ($exp+ ,@args) )
+;     (format t "~A ~A ~A ~A" f1 f2 asc desc)))
+;($index* "foo" "k" :desc)
+;($index* "foo" ("k" :desc) )
+;($index* "foo" "k" )
+
+;($index  "foo" :unique :drop-duplicates :asc ("k" "l") :desc ("m" "n" "o"))
+
+;($index  "foo" :drop :all)
+;($index  "foo" :drop :asc "k")
+
+(defun collect-args (lst &optional accum)
+  (cond ( (atom lst) (values (list lst) nil)) 
+	( (null lst) (values (nreverse accum) lst))
+	( (not (keywordp (car lst) ) ) (error "unexpected format in collect-args"))
+	( (keywordp (cadr lst) ) (collect-args (cdr lst) (cons (car lst) accum)))
+	( (null (cadr lst))    (values (nreverse (cons (car lst) accum)) nil ))
+	(t                     (values (nreverse accum) lst))))
+
+(defmacro construct-container* (value args)
+  `(cond ( (consp ,args) (reduce (lambda (x y) (kv x y ) ) (mapcar (lambda (x) (kv x ,value) ) ,args)))
+	 ( t (kv ,args ,value))))
+
+(defmacro $index (collection &rest args) 
+  `(multiple-value-bind (spec fields) (collect-args (unwrap ($exp+ ,@args)))
+     (destructuring-bind (&key show rm all unique drop-duplicates asc desc) (append (set-keys spec) fields)
+       (let* ((ascenders   (when asc  (construct-container*   1 asc)))
+	      (descenders  (when desc (construct-container*  -1 desc)))
+	      (index-param (if asc (kv ascenders descenders) descenders)))
+	 (cond ( show (show :indexes) )
+	       ( rm  (progn (cond ( all (nd (db.run-command :deleteindexes :collection ,collection)))
+				  ( t   (nd (db.run-command :deleteindexes :collection ,collection 
+							    :index index-param))))))
+	       ( t (db.ensure-index ,collection index-param 
+				    :unique unique :drop-duplicates drop-duplicates)))))))
+	 
 

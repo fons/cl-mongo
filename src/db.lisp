@@ -230,8 +230,8 @@ Create an index specified by the keys in a collection
 (defun asc/desc->+1/-1 (ht)
   (let ((new-ht (make-hash-table :test 'equal)))
     (labels ((conv (value) 
-	       (cond ( (eql value 'asc)  1)
-		     ( (eql value 'desc) -1)
+	       (cond ( (eql value :asc)  1)
+		     ( (eql value :desc) -1)
 		     (t                  value))))
       (with-hash-table-iterator (iterator ht)
 	(dotimes (repeat (hash-table-count ht))
@@ -240,7 +240,8 @@ Create an index specified by the keys in a collection
     new-ht))
 	    
 
-(defmethod db.ensure-index ( (collection string) (index hash-table) &key (mongo nil)  (unique nil) )
+(defmethod db.ensure-index ( (collection string) (index hash-table) 
+			    &key (mongo nil)  (unique nil) (drop-duplicates nil) )
   (assert (typep unique 'boolean))
   (let ((mongo (or mongo (mongo)))
 	(index (asc/desc->+1/-1 index)))
@@ -260,22 +261,40 @@ Create an index specified by the keys in a collection
 		       (when exists-p (setf (gethash key new-ht) (float value))))))
 		 new-ht))
 	     ;----------------------------------------------------------------------
+	     (spec-gen (unique drop-dups) 
+	       (let* ((ukv  (when unique    (kv "unique"   unique)))
+		      (dkv  (when drop-dups (kv "dropDups" drop-dups)))
+		      (both (when (and ukv dkv) (kv ukv dkv))))
+		 (cond (both both)
+		       (ukv  ukv)
+		       (dkv  dkv)
+		       (t    nil) )))
+	     ;----------------------------------------------------------------------
 	     (keys->name (k)
 	       (format nil "~{~{~a~^_~}~^_~}" k)))
       (db.insert "system.indexes" 
 		 (kv (kv "ns"   (full-collection-name mongo collection) )
 		     (kv "key"  (force-float index) )
-		     (when unique (kv "unique" unique))
+		     (spec-gen unique drop-duplicates)
 		     (kv "name" (keys->name (ht->list index))))))))
 
-(defmethod db.ensure-index ( (collection string) (key string) &key (mongo nil)  (unique nil) (asc t) )
+(defmethod db.ensure-index ( (collection string) (index kv-container) 
+			    &key (mongo nil)  (unique nil) (drop-duplicates nil) )
+  (db.ensure-index collection (kv->ht index) :mongo mongo :unique unique 
+		   :drop-duplicates drop-duplicates))
+		   
+(defmethod db.ensure-index ( (collection string) (key string) 
+			    &key (mongo nil)  (unique nil) (asc t) (drop-duplicates nil) )
   (let ((mongo    (or mongo (mongo)))
 	(order-id (if asc 1 -1))) 
-    (db.ensure-index collection (kv->ht (kv key order-id)) :mongo mongo :unique unique)))
+    (db.ensure-index collection (kv->ht (kv key order-id)) 
+		     :mongo mongo :unique unique :drop-duplicates drop-duplicates)))
 
-(defmethod db.ensure-index ( (collection string) (key pair) &key (mongo nil)  (unique nil) )
+(defmethod db.ensure-index ( (collection string) (key pair)
+			    &key (mongo nil)  (unique nil) (drop-duplicates nil) )
   (let (( asc (if (eql -1 (pair-value key)) nil t)))
-    (db.ensure-index collection (pair-key key) :mongo mongo :unique unique :asc asc)))
+    (db.ensure-index collection (pair-key key) 
+		     :mongo mongo :unique unique :asc asc :drop-duplicates drop-duplicates)))
 
 (defgeneric db.run-command ( cmd &key )
   (:documentation "
@@ -308,6 +327,10 @@ For most commands you can just uses the key-value shown in the mongo documentati
 (defmethod db.run-command ( (cmd (eql :deleteindexes) ) &key (mongo nil) (collection nil) (index "*") )
   (assert (not (null collection)))
   (db.find "$cmd" (kv (kv "deleteIndexes" collection) (kv "index" index)) :mongo mongo))
+
+(defmethod db.run-command ( (cmd (eql :dropindexes) ) &key (mongo nil) (collection nil) (index "*") )
+  (assert (not (null collection)))
+  (db.find "$cmd" (kv (kv "dropIndexes" collection) (kv "index" index)) :mongo mongo))
 
 (defmethod db.run-command ( (cmd (eql :drop) ) &key (mongo nil) (collection nil) (index "*") )
   (assert (not (null collection)))
@@ -385,3 +408,4 @@ all the documents in the collection.
 
 ;;(db.find "$cmd" (kv (kv "count" "foo")  (kv "query" (kv nil nil)) (kv "fields" (kv nil nil))))
 ;;(db.find "foo" (kv (kv "query" (kv nil nil)) (kv "orderby" (kv "k" 1)) ) :limit 0)
+

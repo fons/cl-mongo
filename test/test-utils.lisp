@@ -3,10 +3,13 @@
 (defmacro with-test-package (desc &rest args)
   `(handler-case
        (multiple-value-prog1 
-	   (progn ,@args))
-     (error (c)
-       (progn
-	 (format t "test-package '~A' failed with error : ~% *) ~A ~%" ,desc c)))))
+	   (prog2
+	       (format t "---- starting test of package : { ~A } ---------------~%" ,desc)
+	       ,@args
+	       (format t "---- finished test of package { ~A } sucessfully ------~%" ,desc)))
+       (error (c)
+	 (progn
+	   (format t "test-package '~A' failed with error : ~% *) ~A ~%" ,desc c)))))
 
 	      
 (defmacro run-test (desc expected found)
@@ -20,6 +23,9 @@
 
 (defun force-single-float (n)
   (coerce n 'single-float))
+
+(defun force-double-float (n)
+  (coerce n 'double-float))
 
 (defun geometric-range* (base length accum factor)
   (if (zerop length)
