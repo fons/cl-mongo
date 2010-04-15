@@ -11,26 +11,37 @@ This is not a driver (yet) as specified in the mongo documents; There is still s
 functionality I need to implement.
 
 
-Various features are missing such as serialization of binary data and code, authentication, 
+Various features are missing such as serialization of binary data and code, 
 gridfs among other things.
 
 In its current state cl-mongo provides the ability to insert, update and delete documents.
 It also supports indexing.
 
-I developed this using *sbcl*. I didn't rely on any sbcl extenxions so I expect this to run under 
-other lisps as well.
+I developed this using *sbcl*, *clozure common lisp*, *clisp* and *allegro common lisp*.
+
 
 ## Version
 
-   Version 0.1.1
+   Version 0.5.0
 
-   This version is basically an alpha release. Many features are and testing has not been
-   tested extensively.
-
+   This version is basically an alpha release. 
+   I've added regression testing for all features currently supported by cl-mongo.
+   
    
 ## Installation
 
 Use asdf to install cl-mongo. 
+
+## Testing
+
+The cl-mongo-test package  contains regression tests for all the features currently supported.
+cl-mongo-test is asdf-installable, but does not export it's tests. 
+To run the quick test, do this :
+    (use-package :cl-mongo-test)
+    (quick-test)
+
+Quick test will connected to a locally running mongodb instance. It uses the "foo" collection 
+in the "test" database.
 
 ## A sample session
 This connects to the test database on the local mongo server listening on its default port.
@@ -140,6 +151,20 @@ Check the status of the server.
         "totalTime"  ->  1.39799764586d11
         "uptime"  ->  139799.0d0
 
+## $ syntax
+
+I've added various $.. macros which allow for a more declarative programming style. In stead of
+doing something like :
+
+    (db.find "foo" (kv "k" (kv "$lte" 3)))
+
+you can use :
+
+    (db.find "foo" ($<= "k" 3))
+
+To declare a unique ascending index on "k" in collection "foo" , you can say :
+
+    ($index "foo" :unique :asc "k")
 
 
 ## What's missing
@@ -148,11 +173,9 @@ At least the following is missing :
 
 * Request id/ Response id are left 0 in the header.
 * Serialization of binary data.
-* Serialization of regular expressions.
 * Serialization of code scope.
 * Advanced queries like min/max queries, group by, snapshot support.
 * Aggregation except for distinct and group by.
-* Authentication
 * GridFS
 * ......
 
@@ -184,6 +207,24 @@ license</a> so you can basically do with it whatever you want.
   <li><a href="#download">Download</a>
   <li><a href="#dictionary">The CL-MONGO dictionary</a>
     <ol>
+      <li><a href="#$"><code>$</code></a>
+      <li><a href="#$!="><code>$!=</code></a>
+      <li><a href="#$!in"><code>$!in</code></a>
+      <li><a href="#$+"><code>$+</code></a>
+      <li><a href="#$-"><code>$-</code></a>
+      <li><a href="#$/"><code>$/</code></a>
+      <li><a href="#$<"><code>$<</code></a>
+      <li><a href="#$<="><code>$<=</code></a>
+      <li><a href="#$>"><code>$></code></a>
+      <li><a href="#$>="><code>$>=</code></a>
+      <li><a href="#$all"><code>$all</code></a>
+      <li><a href="#$em"><code>$em</code></a>
+      <li><a href="#$exists"><code>$exists</code></a>
+      <li><a href="#$in"><code>$in</code></a>
+      <li><a href="#$index"><code>$index</code></a>
+      <li><a href="#$mod"><code>$mod</code></a>
+      <li><a href="#$not"><code>$not</code></a>
+      <li><a href="#$where"><code>$where</code></a>
       <li><a href="#*mongo-default-db*"><code>*mongo-default-db*</code></a>
       <li><a href="#*mongo-default-host*"><code>*mongo-default-host*</code></a>
       <li><a href="#*mongo-default-port*"><code>*mongo-default-port*</code></a>
@@ -208,12 +249,12 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#db.next"><code>db.next</code></a>
       <li><a href="#db.run-command"><code>db.run-command</code></a>
       <li><a href="#db.save"><code>db.save</code></a>
+      <li><a href="#db.sort"><code>db.sort</code></a>
       <li><a href="#db.stop"><code>db.stop</code></a>
       <li><a href="#db.update"><code>db.update</code></a>
       <li><a href="#db.use"><code>db.use</code></a>
       <li><a href="#docs"><code>docs</code></a>
       <li><a href="#document"><code>document</code></a>
-      <li><a href="#exp-test"><code>exp-test</code></a>
       <li><a href="#generate-readme"><code>generate-readme</code></a>
       <li><a href="#get-element"><code>get-element</code></a>
       <li><a href="#ht->document"><code>ht->document</code></a>
@@ -233,6 +274,7 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#rm-element"><code>rm-element</code></a>
       <li><a href="#show"><code>show</code></a>
       <li><a href="#time-zone"><code>time-zone</code></a>
+      <li><a href="#with-mongo-connection"><code>with-mongo-connection</code></a>
     </ol>
   <li><a href="#ack">Acknowledgements</a>
 </ol>
@@ -244,6 +286,222 @@ href="http://github.com/fons/cl-mongo">http://github.com/fons/cl-mongo</a>. The
 current version is 0.1.0.
 
 <br>&nbsp;<br><h3><a class=none name="dictionary">The CL-MONGO dictionary</a></h3>
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$'><b>$</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$!='><b>$!=</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$!in'><b>$!in</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$+'><b>$+</b> <i>arg <tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$-'><b>$-</b> <i>arg <tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$/'><b>$/</b> <i>regex options</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$<'><b>$<</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$<='><b>$<=</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$>'><b>$></b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$>='><b>$>=</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$all'><b>$all</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$em'><b>$em</b> <i>array <tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$exists'><b>$exists</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$in'><b>$in</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$index'><b>$index</b> <i>collection <tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$mod'><b>$mod</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$not'><b>$not</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$where'><b>$where</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
 
 
 
@@ -386,7 +644,7 @@ Show all the collections in the current database.
 
 
 Count all the collections satifying the criterion set by the selector. 
-&#039;all can be used to return a count of
+:all can be used to return a count of
 all the documents in the collection.
 
 
@@ -426,7 +684,7 @@ It may be more efficient to run a delete script on he server side.
 
 
 
-<p><br>[Generic function]<br><a class=none name='db.ensure-index'><b>db.ensure-index</b> <i>collection keys <tt>&amp;key</tt> unique mongo asc</i> =&gt; <i>result</i></a>
+<p><br>[Generic function]<br><a class=none name='db.ensure-index'><b>db.ensure-index</b> <i>collection keys <tt>&amp;key</tt> drop-duplicates unique mongo asc</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
 
@@ -533,7 +791,7 @@ Executes the next call on the iterator identified by cursor-id.
 
 
 
-<p><br>[Generic function]<br><a class=none name='db.run-command'><b>db.run-command</b> <i>cmd <tt>&amp;key</tt> arg mongo index collection</i> =&gt; <i>result</i></a>
+<p><br>[Generic function]<br><a class=none name='db.run-command'><b>db.run-command</b> <i>cmd <tt>&amp;key</tt> arg mongo collection index</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
 
@@ -557,6 +815,20 @@ by `(make-document)` ) it will be &#039;upserted&#039; (that is: it will be inse
 doesn&#039;t exist).  If the document a hash table or a kv set, it will be inserted.  
 In other words this a a helper-function build around *db.insert* and *db.update*.
 
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='db.sort'><b>db.sort</b> <i>collection query <tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+sort macro : Takes the same arguments and keywords as db.find but converts the query 
+   so it works as a sort. use the :field keyword to select the field to sort on.
+   Set :asc to nil to reverse the sort order
 
 </blockquote>
 
@@ -597,7 +869,6 @@ found in the collection. &#039;:multi&#039;  : Update all documents identified b
 <p><br>[Generic function]<br><a class=none name='db.use'><b>db.use</b> <i>db <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
 Use a database on the mongo server. Opens a connection if one isn&#039;t already 
 established. (db.use -) can be used to go to a previosuly visited database, 
 similar to cd -. 
@@ -612,10 +883,8 @@ similar to cd -.
 <p><br>[Function]<br><a class=none name='docs'><b>docs</b> <i>result</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
 Stop the iterator (if any) and return the list of documents returned by the query. 
 Typical ue would be in conjunction with db.find like so (docs (iter (db.find &#039;foo&#039; &#039;ll)))
-
 
 </blockquote>
 
@@ -633,42 +902,6 @@ an internally generated unique id.
 Accessors are : &#039;elements&#039; which returns the internal hash table;
 &#039;_id&#039; which  returns the unique id and &#039;_local_id&#039; which if true means that 
 the document was generated by the client (as opposed to having been read from the server).
-
-</blockquote>
-
-
-
-
-
-
-<p><br>[Generic function]<br><a class=none name='exp-test'><b>exp-test</b> <i>arg</i> =&gt; <i>result</i></a>
-<blockquote><br>
-
-
-
-</blockquote>
-
-
-
-
-
-
-<p><br>[Method]<br><a class=none><b>exp-test</b> <i>(arg string)</i> =&gt; <i>result</i></a>
-<blockquote><br>
-
-
-
-</blockquote>
-
-
-
-
-
-
-<p><br>[Method]<br><a class=none><b>exp-test</b> <i>(arg (eql hello))</i> =&gt; <i>result</i></a>
-<blockquote><br>
-
-
 
 </blockquote>
 
@@ -723,11 +956,8 @@ Convert a hash-table to a document.
 <p><br>[Function]<br><a class=none name='iter'><b>iter</b> <i>result <tt>&amp;key</tt> mongo max-per-call</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
 Exhaustively iterate through a query. The maximum number of responses 
 per query can be specified using the max-per-call keyword.
-
-
 
 </blockquote>
 
@@ -736,11 +966,10 @@ per query can be specified using the max-per-call keyword.
 
 
 
-<p><br>[Generic function]<br><a class=none name='kv'><b>kv</b> <i>a b <tt>&amp;rest</tt> rest</i> =&gt; <i>result</i></a>
+<p><br>[Generic function]<br><a class=none name='kv'><b>kv</b> <i>a <tt>&amp;rest</tt> rest</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
-This a helper function for key-value pairs and sets of key-value pairs.  
+ This a helper function for key-value pairs and sets of key-value pairs.  
 In a key-value pair like (kv key value) the key has to be a string and the
 value something which is serializable. 
 key-value pairs can be combined using kv as well : (kv (kv key1 val1) (kv key2 val2)).
@@ -785,10 +1014,11 @@ Each connection is a added to a global registry.
 <p><br>[Generic function]<br><a class=none name='mongo'><b>mongo</b> <i><tt>&amp;key</tt> host port db name host port db name</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
- This method returns the connection referred to by the name identifier from 
-the connection registry. The connection name is unique. 
-If no connection with that name exists, a new connection with the supplied or default host, port and db 
-parameters will be created. The default host is localhost; the default port is  27017; the default db is admin.
+ This method returns the connection referred to by 
+the name identifier from the connection registry. The connection name is unique. 
+If no connection with that name exists, a new connection with the supplied or default 
+host, port and db parameters will be created. The default host is localhost; 
+the default port is  27017; the default db is admin.
 
 </blockquote>
 
@@ -802,8 +1032,8 @@ parameters will be created. The default host is localhost; the default port is  
 
 Close the connection to the mongo database. 
 The name should uniquely identify the connection to close.
-This is either a mongo object or the name the object is bound to in the connection registry. 
-To close all open connections use the special symbol &#039;all
+This is either a mongo object or the name the object is bound to 
+in the connection registry. To close all open connections use the special symbol &#039;all
 
 </blockquote>
 
@@ -827,10 +1057,12 @@ To close all open connections use the special symbol &#039;all
 <p><br>[Generic function]<br><a class=none name='mongo-swap'><b>mongo-swap</b> <i>left right</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-Swap the connections identified by the name left and right. Typical use would be 
-like (swap-connection :default :alt. After the function call :default will refer to the connection
-previously referred to with &#039;alt. The default connection is returned by (mongo) and is the default used in the
-api
+Swap the names of the left and right connections. Typical use would be 
+`(mongo-swap :default :alt)`. After the function call :default will refer to the connection
+previously referred to as :alt. A connection named :default is returned by `(mongo)` and is the default used in the api. The connections are returned in the order they were passed in (but with the names
+swapped between them). To re-open a connection you can say 
+`(mongo-close (mongo-swap :default (mongo :host &lt;newhost&gt; :portid &lt;portid&gt; :name :temp)))` 
+and a new default connection is registered.
 
 </blockquote>
 
@@ -891,16 +1123,14 @@ ok in mosty cases. See nd for an alternative.
 
 
 
-<p><br>[Function]<br><a class=none name='rm'><b>rm</b> <i>result <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
+<p><br>[Function]<br><a class=none name='rm'><b>rm</b> <i>collection query <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
-
 
 Delete all the documents returned by a query. This is not an efficient 
 way of deleting documents as it invloves multiple trips to the server.
 Mongo allows for execution of java-script on the server side, which provides
 an alternative. Typical use would be (rm (iter (db.find &#039;foo&#039; (kv &#039;key&#039; 1)))),
 which deletes all documents in foo, with field key equal to 1.
-
 
 </blockquote>
 
@@ -938,6 +1168,21 @@ the profile and more. Things is a keyword so (show &#039;users) will show all us
 <blockquote><br>
 
 Set the time zone appropriate for the current environment.
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='with-mongo-connection'><b>with-mongo-connection</b> <i>args <tt>&amp;rest</tt> body</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Creates a connection to a mongodb, makes it the default connection 
+  and evaluates the body form.
+  args uses the same keyword set as mongo (:db. :localhost :port)
+  args is passed on to make-mongo when the connection is created.
 
 </blockquote>
 

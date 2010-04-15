@@ -378,7 +378,6 @@ all the documents in the collection.
 (defun hex-md5 (str)
   (ironclad:digest-sequence :md5 (babel:string-to-octets str)))
 
-
 (defgeneric db.create-collection ( collection &key )
   (:documentation "create a collection"))
 

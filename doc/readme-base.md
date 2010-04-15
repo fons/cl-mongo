@@ -11,26 +11,37 @@ This is not a driver (yet) as specified in the mongo documents; There is still s
 functionality I need to implement.
 
 
-Various features are missing such as serialization of binary data and code, authentication, 
+Various features are missing such as serialization of binary data and code, 
 gridfs among other things.
 
 In its current state cl-mongo provides the ability to insert, update and delete documents.
 It also supports indexing.
 
-I developed this using *sbcl*. I didn't rely on any sbcl extenxions so I expect this to run under 
-other lisps as well.
+I developed this using *sbcl*, *clozure common lisp*, *clisp* and *allegro common lisp*.
+
 
 ## Version
 
-   Version 0.1.1
+   Version 0.5.0
 
-   This version is basically an alpha release. Many features are and testing has not been
-   tested extensively.
-
+   This version is basically an alpha release. 
+   I've added regression testing for all features currently supported by cl-mongo.
+   
    
 ## Installation
 
 Use asdf to install cl-mongo. 
+
+## Testing
+
+The cl-mongo-test package  contains regression tests for all the features currently supported.
+cl-mongo-test is asdf-installable, but does not export it's tests. 
+To run the quick test, do this :
+    (use-package :cl-mongo-test)
+    (quick-test)
+
+Quick test will connected to a locally running mongodb instance. It uses the "foo" collection 
+in the "test" database.
 
 ## A sample session
 This connects to the test database on the local mongo server listening on its default port.
@@ -140,6 +151,20 @@ Check the status of the server.
         "totalTime"  ->  1.39799764586d11
         "uptime"  ->  139799.0d0
 
+## $ syntax
+
+I've added various $.. macros which allow for a more declarative programming style. In stead of
+doing something like :
+
+    (db.find "foo" (kv "k" (kv "$lte" 3)))
+
+you can use :
+
+    (db.find "foo" ($<= "k" 3))
+
+To declare a unique ascending index on "k" in collection "foo" , you can say :
+
+    ($index "foo" :unique :asc "k")
 
 
 ## What's missing
@@ -148,11 +173,9 @@ At least the following is missing :
 
 * Request id/ Response id are left 0 in the header.
 * Serialization of binary data.
-* Serialization of regular expressions.
 * Serialization of code scope.
 * Advanced queries like min/max queries, group by, snapshot support.
 * Aggregation except for distinct and group by.
-* Authentication
 * GridFS
 * ......
 

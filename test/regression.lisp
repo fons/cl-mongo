@@ -279,7 +279,7 @@
     (insert-lots collection size)
     (sleep wait)
     (run-test "testing indexing on index_this2; simple, should double the doc count "
-	      (* 2 size) 
+	      (force-double-float (* 2 size) )
 	      (get-element "n" (car (docs (db.count "foo" :all))))))
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     ;;this will fail to install b/c there are duplicates

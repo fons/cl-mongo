@@ -178,3 +178,4 @@
 				    :unique unique :drop-duplicates drop-duplicates)))))))
 	 
 
+;;(db.find "foo" ($ ($ "$min" ($ "value-1" 600)) ($ "$max" ($ "value-1" 610)) ($ "query" ($ nil nil) )) )
