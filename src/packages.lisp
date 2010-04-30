@@ -51,6 +51,8 @@
    :nwd
    #+(or sbcl clisp allegro abcl)    :cwd
    :pp
+   :n
+   :retval
    :iter
    :nd
    :rm
@@ -77,6 +79,27 @@
    :$em
    :$where
    :$index 
+
+   :$inc
+   :$set
+   :$unset
+   :$push
+   :$push-all
+   :$add-to-set
+   :$pop-front
+   :$pop-back
+   :$pull
+   :$pull-all
+   :$where
+   :$map-reduce
+
+   ;;javascript 
+   :jsdef
+   :defjs
+   :defsrvjs
+   :foreach
+   :transform
+   :install-js
 
    ;; documentation generator
    :generate-readme

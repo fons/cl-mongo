@@ -72,6 +72,15 @@ is supplied.
 	  (if exists-p (format stream "  ~A  -> ~A ~%" key (vpr value) )))))
     (format stream "}~%")))
 
+(defun hash-keys (ht)
+  (let ((lst))
+    (with-hash-table-iterator (iterator ht)
+      (dotimes (repeat (hash-table-count ht))
+	(multiple-value-bind (exists-p key value) (iterator)
+	  (if exists-p (push key lst)))))
+    (nreverse lst)))
+
+
 ;
 ; suppress the printing of the object id if the objectis locally generated
 ;

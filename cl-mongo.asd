@@ -14,6 +14,7 @@
 	       :babel
 	       :documentation-template
 	       :lisp-unit
+	       :parenscript
 	       :usocket)
   :serial t
   :components 
@@ -32,6 +33,7 @@
 		 (:file "bson-array")
 		 (:file "document")
 		 (:file "mongo-syntax")
+		 (:file "js.lisp")
 		 (:file "bson-encode-container")
 		 (:file "protocol")
 		 (:file "mongo")

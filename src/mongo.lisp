@@ -176,20 +176,33 @@ and a new default connection is registered." ))
   #-(or clisp) (test-for-readback* stream timeout)
   #+clisp (test-for-readback-clisp stream timeout))
 
-(defmethod mongo-message ( (mongo mongo) (message array) &key (timeout 5) ) 
+
+(defmethod mongo-message* ( (mongo mongo) (message array) &key (timeout 5) ) 
   (write-sequence message (mongo-stream mongo))
   (force-output (mongo-stream mongo))
   (usocket:wait-for-input (list (socket mongo) ) :timeout timeout)
   (if (test-for-readback (mongo-stream mongo) timeout)
-      (progn 
-	(let* ((reply  (make-octet-vector 1000 :init-fill 4 )) 
-	       (cursor (read-sequence reply (mongo-stream mongo) :start 0 :end 4))
-	       (rsz    (octet-to-int32 (subseq reply 0 4))))
-	  (unless (array-in-bounds-p reply rsz) (adjust-array reply rsz))
-	  (setf (fill-pointer reply) rsz) 
-	  (read-sequence reply (mongo-stream mongo) :start cursor)
-	  reply))
-      nil))
+	(progn 
+	  (let* ((reply  (make-octet-vector 1000 :init-fill 4 )) 
+		 (cursor (read-sequence reply (mongo-stream mongo) :start 0 :end 4))
+		 (rsz    (octet-to-int32 (subseq reply 0 4))))
+	    (unless (array-in-bounds-p reply rsz) (adjust-array reply rsz))
+	    (setf (fill-pointer reply) rsz) 
+	    (read-sequence reply (mongo-stream mongo) :start cursor)
+	    reply))
+	nil))
+
+(defmethod mongo-message ( (mongo mongo) (message array) &key (timeout 5) ) 
+  (handler-case 
+      (mongo-message* mongo message :timeout timeout)
+    (error (c)  
+      (progn
+	(format t "error occured when sending message : ~A~%" c)
+	(format t "closing connection ~A ~%" mongo)
+	(mongo-close mongo)
+	nil))))
+
+
 
 (defgeneric db.use ( db &key )
   (:documentation "Use a database on the mongo server. Opens a connection if one isn't already 
@@ -263,7 +276,7 @@ similar to cd -. "))
 (defmacro with-mongo-connection ( args &rest body)
   "Creates a connection to a mongodb, makes it the default connection 
   and evaluates the body form.
-  args uses the same keyword set as mongo (:db. :localhost :port)
+  args uses the same keyword set as mongo (:db :localhost :port)
   args is passed on to make-mongo when the connection is created."
   (let ((connection-name (gensym)))
     `(let ((,connection-name (gensym)))

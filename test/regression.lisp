@@ -36,6 +36,12 @@
     (rm collection :all)
     (let ((cnt (* 1.0 (get-element "n" (car (docs (db.count collection :all)))))))
       (run-test "deleting all documents" 0.0 (force-single-float cnt))))
+  (reset-test-collection collection size wait)
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" )
+    (let ((total  (n (db.count collection :all)))
+	  (target (n (db.count collection ($< "l" -4)))))
+      (db.delete collection ($< "l" -4) )
+      (run-test "selective delete" (- total target) (n (db.count collection :all)))))
   (reset-test-collection collection 0))
 
 (defun db.find-regression-all (&key (collection *test-collection*) (size 5) (wait 1))
@@ -269,7 +275,8 @@
   (reset-test-collection collection 0)
   (send-doc-in-doc-in-doc collection)
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
-    (pp (db.find collection :all))))
+    (pp (db.find collection :all)))
+  (rm collection :all))
 
 (defun test-indexing (&key (collection *test-collection*)  (size 23) (wait 1) )
   (reset-test-collection collection size wait)
@@ -298,6 +305,151 @@
     (run-test "testing unique index on index_this2, desc with duplicates dropped; should decrease count"
 	      (force-double-float size)
 	      (get-element "n" (car (docs (db.count "foo" :all))))))
+  ($index collection :rm :all)
+  (reset-test-collection collection 0))
+
+(defun test-modifiers (&key (collection *test-collection*)  (size 23) (wait 1) )
+  (reset-test-collection collection size wait)
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (let* ((doc (car (docs (db.find collection ($ "6" 6) ))))
+	   (val-before (get-element "k" doc)))
+      (db.update collection ($ "6" 6) ($inc "k" 900))
+      (run-test "increase value of field using $inc"
+		(force-double-float (+ val-before 900))
+		(get-element "k" (car (docs (db.find "foo" ($ "6" 6))))))
+      (db.update collection ($ "6" 6) ($set "k" -89))
+      (run-test "set value of field using $set"
+		-89
+		(get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
+
+      (db.update collection ($ "6" 6) ($unset "k"))
+      (run-test "remove field using $unset"
+		nil
+		(get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
+      
+      (db.update collection ($ "6" 6) ($push "k" 1 ))
+      (run-test "push a value  to the field using $push"
+		1
+		(car (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))))
+
+      (db.update collection ($ "6" 6) ($push-all "k" (78 89 56 34 12 100 ) ))
+      (run-test-equal "push a list of values to the field using $push-all"
+		      (list 1 78 89 56 34 12 100)
+		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
+
+      (db.update collection ($ "6" 6) ($add-to-set "k" 989 ))
+      (run-test-equal "add a value to the field using $add-to-set"
+		      (list 1 78 89 56 34 12 100 989)
+		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
+
+      (db.update collection ($ "6" 6) ($pop-back "k"))
+      (run-test-equal "remove last element  with $pop-back"
+		      (list 1 78 89 56 34 12 100)
+		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
+      
+      (db.update collection ($ "6" 6) ($pop-front "k"))
+      (run-test-equal "remove first element  with $pop-front"
+		      (list 78 89 56 34 12 100)
+		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
+
+      (db.update collection ($ "6" 6) ($pull "k" 89)
+      (run-test-equal "remove element  with $pull"
+		      (list 78 56 34 12 100)
+		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
+      
+      (db.update collection ($ "6" 6) ($pull-all "k" (56 34 100)))
+      (run-test-equal "remove elements  with $pull-all"
+		      (list 78  12 )
+		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
+      
+      ))
+  (reset-test-collection collection 0))
+
+
+;;------------------------------------------
+
+(defun test-javascript (&key (collection *test-collection*)  (size 23) (wait 1) )
+  (reset-test-collection collection size wait)
+  (rm "system.js" :all)
+  ;; Test simple javascript capabilities
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (defjs echo(x) 
+      (return x))
+    (run-test-equal "echo with client-side js : number" (force-double-float 1) (echo 1))
+    (run-test-equal "echo with client-side js : calculation" (force-double-float 3) (echo (+ 1 2)))
+    (run-test-equal "echo with client-side js : string" "hello" (echo "hello"))
+    (run-test-equal "echo with client-side js : array" 
+		    (list "hello" (force-double-float 56) (list (force-double-float 1) 
+								(force-double-float 2))) 
+		    (echo (list "hello" 56 (list 1 2 )))))
+
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (defjs set-value(value) 
+      (transform db.foo (lambda (obj) (setf (slot-value obj 'k) value))))
+    (labels ((testit(descr value) 
+	       (set-value value)
+	       (run-test-equal descr (force-double-float size) 
+			       (n (db.count collection (kv "k" value))))))
+      (testit "set field in collection to number" 9999)
+      (testit "set field in collection to string" "hello")
+      (testit "set field in collection to list" (list "hello" 999.99))))
+
+  ;test the remotely installed versions
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (defsrvjs remote_echo(x) 
+      (return x))
+    (run-test-equal "echo with client-side js : number" (force-double-float 1) (remote_echo 1))
+    (run-test-equal "echo with client-side js : calculation" (force-double-float 3) 
+		    (remote_echo (+ 1 2)))
+    (run-test-equal "echo with client-side js : string" "hello" (remote_echo "hello"))
+    (run-test-equal "echo with client-side js : array" 
+		    (list "hello" (force-double-float 56) (list (force-double-float 1) 
+								(force-double-float 2))) 
+		    (remote_echo (list "hello" 56 (list 1 2 )))))
+
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (defsrvjs remote_setvalue(value) 
+      (transform db.foo (lambda (obj) (setf (slot-value obj 'k) value))))
+    (labels ((testit(descr value) 
+	       (remote_setvalue value)
+	       (run-test-equal descr (force-double-float size) 
+			       (n (db.count collection (kv "k" value))))))
+      (testit "set field in collection to number" 9999)
+      (testit "set field in collection to string" "hello")
+      (testit "set field in collection to list" (list "hello" 999.99))))
+  (reset-test-collection collection 0)
+
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (defsrvjs tf8() 
+      (let* ((l (make-array 1 2 3 4 5))
+	     (k (make-array)))
+	(ps:dolist (c l)
+	  (k.push  c ) 
+	  (db.foo.save (ps:create :field c)))
+	(return k)))
+    (run-test-equal "remotely create objects : return data" 
+		    (mapcar #'force-double-float (list 1 2 3 4 5))
+		    (tf8))
+    (run-test-equal "remotely create objects"
+		    (mapcar #'force-double-float (list 1 2 3 4 5))
+		    (mapcar (lambda(d) (get-element "field" d)) (docs (db.find "foo" :all)))))
+  (reset-test-collection collection size wait)
+
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (defsrvjs multip (x y)
+      (return (* y x)))
+    (install-js multip)
+    (defsrvjs tf17(value) 
+      (transform db.foo (lambda (obj) 
+			  (setf (slot-value obj 'k) (multip value 89)))))
+    (tf17 5)
+    (run-test-equal "set value referencing remotly installed script"
+		    t 
+		    (reduce (lambda ( x y) (and x y))
+			    (mapcar (lambda (d) (eql (* 5.0d0 89.0d0) (get-element "k" d))) 
+				    (docs (db.find "foo" :all))))))
+  
+  (rm "system.js" :all)
   (reset-test-collection collection 0))
 
 ;;--------------------------------------------------------------------------
@@ -350,6 +502,10 @@
     (db.find-advanced-query-regression-2 :collection collection :size size :wait wait))
   (with-test-package "test indexing"
     (test-indexing :collection collection :size size :wait wait))
+  (with-test-package "test update modifiers"
+    (test-modifiers :collection collection :size size :wait wait))
+  (with-test-package "test java script (local and remote)"
+    (test-javascript :collection collection :size size :wait wait))
   (with-test-package "test serialization; inspect visually"
     (test-serialization :collection collection :size size :wait wait)))
 

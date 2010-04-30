@@ -19,6 +19,14 @@
 	     (assert-eql ,expected ,found description)))
      (error (c)
        (format t "test ~A failed with error ~A ~%" ,desc c))))
+
+(defmacro run-test-equal (desc expected found)
+  `(handler-case
+       (multiple-value-prog1 
+	   (let ((description ,desc))
+	     (assert-equal ,expected ,found description)))
+     (error (c)
+       (format t "test ~A failed with error ~A ~%" ,desc c))))
 	      
 
 (defun force-single-float (n)

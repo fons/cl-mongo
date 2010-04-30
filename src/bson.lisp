@@ -189,18 +189,31 @@ clashed with the encoding for booleans..
   (:documentation "return data and the remaining array"))
 
 (defmethod bson-decode ( (code t) (array t) )
-  (format t "~% code : ~A ~%" code)
-  (format t "~% array : ~A ~% " array)
+;  (format t "~% code : ~A ~%" code)
+;  (format t "~% array : ~A ~% " array)
   (values array (make-octet-vector 1 :init-fill 1)))
 
 (defmethod bson-decode ( (code (eql +bson-data-number+)) array)
   (values (decode-double-float-bits (octet-to-int64 (subseq array 0 8))) (subseq array 8)))
- 
-(defmethod bson-decode ( (code (eql +bson-data-string+)) array)
+
+(defmethod to-cstring (array)
   (let* ((size (octet-to-int32 (subseq array 0 4)))
 	 (str  (null-terminated-octet-to-string (subseq array 4 (+ 4 size)) size))
 	 (rest (subseq array (+ 4 size))))
     (values str rest)))
+
+(defmethod bson-decode ( (code (eql +bson-data-string+)) array)
+  (to-cstring array))
+
+;  (let* ((size (octet-to-int32 (subseq array 0 4)))
+;	 (str  (null-terminated-octet-to-string (subseq array 4 (+ 4 size)) size))
+;	 (rest (subseq array (+ 4 size))))
+ ;   (values str rest)))
+
+(defmethod bson-decode ( (code (eql +bson-data-code+)) array)
+  (to-cstring array))
+ 
+
 
 (defmethod bson-decode ( (code (eql +bson-data-binary+)) array)
   (let* ((type (octet-to-byte  (subseq array 4 5)))

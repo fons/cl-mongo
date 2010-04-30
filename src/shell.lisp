@@ -108,6 +108,18 @@ ok in mosty cases. See nd for an alternative.
   "Pretty-print for non-document responses, like the response to a database command."
   (pp result :stream stream :nd t))
 
+(defun bind-return (val result)
+  "return value bound to val in a return document. Used for count etc.."
+  (get-element val (car (docs result))))
+
+(defun n (result)
+  "return value bound to n in a return document. Used for count etc.."
+  (* 1.0 (bind-return "n" result)))
+
+(defun retval (result)
+  "return value bound to retval in a return document. Used for functions etc.."
+  (bind-return "retval" result))
+
 (defun now()
   "Return the current date and time in bson format.  "
   (make-bson-time))
@@ -155,8 +167,9 @@ ok in mosty cases. See nd for an alternative.
       (unless nl (format t "]~%")))))
 
 (defgeneric show ( things &key )
-  (:documentation "Print a list of things. Things can be users, databases, collections in the current database,
-the profile and more. Things is a keyword so (show 'users) will show all users."))
+  (:documentation "Print a list of things. Things can be users, databases, 
+collections in the current database,
+the profile and more. Things is a keyword so (show :users) will show all users."))
 
 (defmethod show ( (things (eql :connections)) &key)
   (mongo-show))

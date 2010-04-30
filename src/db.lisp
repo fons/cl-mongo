@@ -98,6 +98,7 @@ found in the collection. ':multi'  : Update all documents identified by the sele
 			  :options (update-options :upsert upsert :multi-update multi))
 		   :timeout 0)))
 
+;(defgeneric db.find-and-modify (collection query 
 
 (defgeneric db.save ( collection document &key) 
   (:documentation "
@@ -111,7 +112,11 @@ In other words this a a helper-function build around *db.insert* and *db.update*
   (db.update collection (kv "_id" (_id document) ) document :mongo (or mongo (mongo) ) :upsert t))
 
 (defmethod db.save ( (collection string) (document hash-table) &key (mongo nil) )
-  (db.insert collection document :mongo (or mongo (mongo)) ))
+  (let ((_id (gethash "_id" document)))
+    (db.update collection (kv "_id" _id) document :mongo (or mongo (mongo) ) :upsert t)))
+
+(defmethod db.save ( (collection string) (document kv-container) &key (mongo nil) )
+  (db.save collection (kv->ht document) :mongo (or mongo (mongo))))
 
 (defun headerp (val)
   (and (consp val) (= 1 (length val))))
@@ -193,7 +198,7 @@ Stop iterating and clean up the iterator on the server by making a server call.
 Delete a document from a collection. The *document* field is used to identify the document to
 be deleted.  
 You can enter a list of documents. In that the server will be contacted to delete each one of these.
-It may be more efficient to run a delete script on he server side.
+It may be more efficient to run a delete script on the server side.
 "))
 
 (defmethod db.delete ( (collection t) (document (eql nil)) &key (mongo nil) ))
@@ -209,6 +214,15 @@ It may be more efficient to run a delete script on he server side.
   (dolist (doc documents)
     (db.delete collection doc :mongo mongo)))
 
+(defmethod db.delete ( (collection string) (document kv-container) &key (mongo nil))
+  (let ((mongo (or mongo (mongo) )))
+    (mongo-message mongo (mongo-delete (full-collection-name mongo collection)  
+				       (bson-encode-container document )) :timeout 0)))
+
+(defmethod db.delete ( (collection string) (kv pair) &key (mongo nil))
+  (let ((mongo (or mongo (mongo) )))
+    (mongo-message mongo (mongo-delete (full-collection-name mongo collection)  
+				       (bson-encode (pair-key kv) (pair-value kv))) :timeout 0)))
 
 ;
 ; key -> (string asc)
@@ -353,6 +367,17 @@ For most commands you can just uses the key-value shown in the mongo documentati
   "Show all the collections in the current database."
   (db.find "system.namespaces" 0 :mongo mongo))
 
+(defgeneric db.distinct ( collection key &key )
+  (:documentation "Return all the distinct values of this key in the collection "))
+
+(defmethod db.distinct ( (collection string) (key string) &key (mongo nil) )
+  (db.find "$cmd" (kv (kv "distinct" collection) (kv "key" key)) :limit 1 :mongo mongo))
+	   
+	   
+
+(defun count-it(collection key)
+  (db.find "$cmd" (kv (kv "distinct" collection) (kv "key" key))))
+
 (defgeneric db.count ( collection selector &key )
   (:documentation "
 Count all the collections satifying the criterion set by the selector. 
@@ -367,7 +392,7 @@ all the documents in the collection.
   (db.count collection nil :mongo mongo))
 
 (defmethod db.count ( (collection t) (selector pair ) &key (mongo nil) )
-  (call-next-method collection (kv->ht selector) :mongo mongo))
+  (db.count collection (kv->ht selector) :mongo mongo))
 
 (defgeneric db.eval ( code &rest rest)
   (:documentation "run javascript code server side"))

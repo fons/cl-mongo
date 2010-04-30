@@ -99,6 +99,7 @@
 (defmacro $size (&rest args)
   `($op "$size" ,@args))
 
+
 (defun empty-str(str)
   (if (and str (zerop (length str))) 
       (format nil "\"\"")
@@ -120,37 +121,10 @@
 (defmacro $where (&rest args)
   `(kv "$where" ,@args))
 
-#|
-
-($index "foo" "field" :unique :asc)
-($index+ "foo" ("field1" :unique :asc) ("field2") )
-($index+ "foo" ("field1" :unique :asc :dropDups ) ("field2") )
-($index- "foo" *)
-($index- "foo" *)
-
-|#
-;(set-keys (list :asc :desc :drop-dups))
 
 (defmacro set-keys (&rest args)
   `(cond ( (null ,@args) nil)
 	 ( t  (reduce (lambda (u v) (append u v)) (mapcar (lambda (x) (list x t)) ,@args)))))
-
-;($index "foo" :unique :drop-duplicates :asc ("k" "l") :desc ("m" "n") )
-;($index "foo" :asc "k"   ) 
-;($index "foo" :rm ....)
-;($index "foo" :show)
-
-
-;  `(destructuring-bind (f1 f1 &key asc desc) (unwrap ($exp+ ,@args) )
-;     (format t "~A ~A ~A ~A" f1 f2 asc desc)))
-;($index* "foo" "k" :desc)
-;($index* "foo" ("k" :desc) )
-;($index* "foo" "k" )
-
-;($index  "foo" :unique :drop-duplicates :asc ("k" "l") :desc ("m" "n" "o"))
-
-;($index  "foo" :drop :all)
-;($index  "foo" :drop :asc "k")
 
 (defun collect-args (lst &optional accum)
   (cond ( (atom lst) (values (list lst) nil)) 
@@ -163,6 +137,8 @@
 (defmacro construct-container* (value args)
   `(cond ( (consp ,args) (reduce (lambda (x y) (kv x y ) ) (mapcar (lambda (x) (kv x ,value) ) ,args)))
 	 ( t (kv ,args ,value))))
+
+
 
 (defmacro $index (collection &rest args) 
   `(multiple-value-bind (spec fields) (collect-args (unwrap ($exp+ ,@args)))
@@ -179,3 +155,66 @@
 	 
 
 ;;(db.find "foo" ($ ($ "$min" ($ "value-1" 600)) ($ "$max" ($ "value-1" 610)) ($ "query" ($ nil nil) )) )
+
+
+;(normalize-args (list :min '("k" 1) '("z" 89) :max '("l" 2) ))
+
+(defun normalize-args (lst &optional accum)
+  (cond ( (null lst) (nreverse accum))  
+	( (keywordp (car lst) ) (normalize-args (cddr lst) 
+						(cons (list (cadr lst)) (cons (car lst) accum))))
+	(t  (normalize-args (cdr lst) (cons (cons (car lst) (car accum) ) (cdr accum) )))))
+
+(defmacro construct-container-lst* (args)
+  `(reduce (lambda (x y) (kv x y ) ) (mapcar (lambda (x) (kv (car x) (cadr x))) ,args)))
+
+(defmacro $range (&rest args)
+  `(let ((lst ($exp+ ,@args)))
+     (destructuring-bind (&key min max) (normalize-args lst)
+       (let ((min-arg (when min (kv "$min" (construct-container-lst* min))))
+	     (max-arg (when max (kv "$max" (construct-container-lst* max))))
+	     (query   (kv "query" (kv nil nil))))
+	 (if min-arg 
+	     (kv query min-arg max-arg) 
+  	     (kv query max-arg)))))) 
+  
+(defmacro upd (op &rest args)
+  (cond ( (consp (car args) ) `(kv ,op (construct-container-lst* ($exp+ ,@args))))
+	( t                   `(kv ,op (construct-container-lst* (list ($exp+ ,@args)))))))
+
+(defmacro $inc (&rest args)
+  `(upd "$inc" ,@args))
+
+(defmacro $set (&rest args)
+  `(upd "$set" ,@args))
+
+; ( $unset "k" "l")
+(defmacro $unset (&rest args)
+  `(kv "$unset" (construct-container* 1 (unwrap ($exp+ ,@args)))))
+
+(defmacro $push (&rest args)
+  `(upd "$push" ,@args))
+
+;  `(kv "$push" (construct-container-lst* (list ($exp+ ,@args)))))
+
+(defmacro $push-all (&rest args)
+  `(upd "$pushAll" ,@args))
+
+(defmacro $add-to-set (&rest args)
+  `(upd "$addToSet" ,@args))
+
+(defmacro $pop-back (&rest args)
+  `(kv "$pop" (construct-container* 1 (unwrap ($exp+ ,@args)))))
+
+(defmacro $pop-front (&rest args)
+  `(kv "$pop" (construct-container* -1 (unwrap ($exp+ ,@args)))))
+
+(defmacro $pull (&rest args)
+  `(upd "$pull" ,@args))
+
+(defmacro $pull-all (&rest args)
+  `(upd "$pullAll" ,@args))
+
+(defmacro $where (&rest args)
+  `(kv "$where" ,@args))
+
