@@ -44,6 +44,7 @@
    :db.eval
    :db.add-user
    :db.auth
+   :db.distinct
    :time-zone
    :date-time
 
@@ -51,8 +52,7 @@
    :nwd
    #+(or sbcl clisp allegro abcl)    :cwd
    :pp
-   :n
-   :retval
+   :ret
    :iter
    :nd
    :rm
@@ -92,6 +92,9 @@
    :$pull-all
    :$where
    :$map-reduce
+   :mr.p
+   :mr.gc
+   :mr.gc.all
 
    ;;javascript 
    :jsdef
@@ -100,6 +103,7 @@
    :foreach
    :transform
    :install-js
+   :remove-js
 
    ;; documentation generator
    :generate-readme

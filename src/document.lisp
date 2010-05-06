@@ -40,6 +40,9 @@ is supplied.
 (defgeneric get-element ( key document) 
   ( :documentation "Get an element identified by key from the document." ) )
 
+(defmethod get-element ( (key string) (document (eql nil) ) )
+  (values nil nil))
+
 (defmethod get-element ( (key string) (document document) ) 
   (gethash key (elements document)))
 

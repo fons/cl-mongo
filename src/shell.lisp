@@ -112,13 +112,14 @@ ok in mosty cases. See nd for an alternative.
   "return value bound to val in a return document. Used for count etc.."
   (get-element val (car (docs result))))
 
-(defun n (result)
-  "return value bound to n in a return document. Used for count etc.."
-  (* 1.0 (bind-return "n" result)))
+(defun ret (result)
+  "return value bound to retval in a return document. Used for db.count, db.distinct, functions etc.."
+  (block ret-block
+    (let ((inspect (list "n" "values" "retval")))
+      (dolist (key inspect)
+	(multiple-value-bind (value found) (bind-return key result)
+	  (when found (return-from ret-block value)))))))
 
-(defun retval (result)
-  "return value bound to retval in a return document. Used for functions etc.."
-  (bind-return "retval" result))
 
 (defun now()
   "Return the current date and time in bson format.  "

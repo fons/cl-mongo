@@ -38,10 +38,10 @@
       (run-test "deleting all documents" 0.0 (force-single-float cnt))))
   (reset-test-collection collection size wait)
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" )
-    (let ((total  (n (db.count collection :all)))
-	  (target (n (db.count collection ($< "l" -4)))))
+    (let ((total  (ret (db.count collection :all)))
+	  (target (ret (db.count collection ($< "l" -4)))))
       (db.delete collection ($< "l" -4) )
-      (run-test "selective delete" (- total target) (n (db.count collection :all)))))
+      (run-test "selective delete" (- total target) (ret (db.count collection :all)))))
   (reset-test-collection collection 0))
 
 (defun db.find-regression-all (&key (collection *test-collection*) (size 5) (wait 1))
@@ -313,10 +313,12 @@
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     (let* ((doc (car (docs (db.find collection ($ "6" 6) ))))
 	   (val-before (get-element "k" doc)))
+
       (db.update collection ($ "6" 6) ($inc "k" 900))
       (run-test "increase value of field using $inc"
 		(force-double-float (+ val-before 900))
 		(get-element "k" (car (docs (db.find "foo" ($ "6" 6))))))
+
       (db.update collection ($ "6" 6) ($set "k" -89))
       (run-test "set value of field using $set"
 		-89
@@ -346,22 +348,23 @@
       (run-test-equal "remove last element  with $pop-back"
 		      (list 1 78 89 56 34 12 100)
 		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
-      
+
       (db.update collection ($ "6" 6) ($pop-front "k"))
       (run-test-equal "remove first element  with $pop-front"
 		      (list 78 89 56 34 12 100)
 		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
 
-      (db.update collection ($ "6" 6) ($pull "k" 89)
+      (db.update collection ($ "6" 6) ($pull "k" 89))
       (run-test-equal "remove element  with $pull"
 		      (list 78 56 34 12 100)
-		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
-      
+		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6))))))
+
       (db.update collection ($ "6" 6) ($pull-all "k" (56 34 100)))
       (run-test-equal "remove elements  with $pull-all"
 		      (list 78  12 )
-		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6)))))) 
-      
+		      (get-element "k" (car (docs (db.find "foo" ($ "6" 6))))))
+
+
       ))
   (reset-test-collection collection 0))
 
@@ -371,6 +374,7 @@
 (defun test-javascript (&key (collection *test-collection*)  (size 23) (wait 1) )
   (reset-test-collection collection size wait)
   (rm "system.js" :all)
+  ($index collection :rm :all)
   ;; Test simple javascript capabilities
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     (defjs echo(x) 
@@ -389,11 +393,10 @@
     (labels ((testit(descr value) 
 	       (set-value value)
 	       (run-test-equal descr (force-double-float size) 
-			       (n (db.count collection (kv "k" value))))))
+			       (ret (db.count collection (kv "k" value))))))
       (testit "set field in collection to number" 9999)
       (testit "set field in collection to string" "hello")
       (testit "set field in collection to list" (list "hello" 999.99))))
-
   ;test the remotely installed versions
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     (defsrvjs remote_echo(x) 
@@ -413,7 +416,7 @@
     (labels ((testit(descr value) 
 	       (remote_setvalue value)
 	       (run-test-equal descr (force-double-float size) 
-			       (n (db.count collection (kv "k" value))))))
+			       (ret (db.count collection (kv "k" value))))))
       (testit "set field in collection to number" 9999)
       (testit "set field in collection to string" "hello")
       (testit "set field in collection to list" (list "hello" 999.99))))
@@ -450,6 +453,66 @@
 				    (docs (db.find "foo" :all))))))
   
   (rm "system.js" :all)
+  (reset-test-collection collection 0))
+
+(defun test-map-reduce (&key (collection *test-collection*)  (size 23) (wait 1) )
+  (reset-test-collection collection size wait)
+
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (defjs map_keys()
+      (emit this.name 900)
+      (emit "hello" this.k))
+    (defjs get_some_value(k vals)
+      (let ((sum 0)
+	    (index 0))
+	(dolist (c vals)
+	  (if (= index 3)
+	      (return c)
+	      (progn
+		(incf index 1)
+		(incf sum c))))
+	(return sum)))
+    ($map-reduce collection map_keys get_some_value :out "testit")
+    (run-test-equal "value is equal to value associated with key 'name'"
+		    (force-double-float 900)
+		    (get-element "value" (car (docs (db.find "testit" ($ "_id" "simple")))))))
+
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (defjs map_keys()
+      (emit this.name 9))
+    (defjs sumreduce(k vals)
+      (let ((sum 0))
+	(dolist (c vals)
+	  (incf sum c))
+	(return sum)))
+    
+    (run-test-equal "sum the value associated with key 'name'"
+		    (force-double-float (* size 9))
+		    (get-element "value" (car (docs (mr.p 
+						     ($map-reduce collection map_keys sumreduce)))))))
+  (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
+    (defjs map_keys()
+      (emit this.k 9))
+
+    (defjs sumreduce(k vals)
+	(return 1))
+    
+    (run-test-equal "emit value associated with key k"
+		    size
+		    (length (docs (mr.p ($map-reduce collection map_keys sumreduce :keeptemp t))))))
+  
+  (remove-js map_keys)
+  (remove-js sumreduce)
+  (remove-js get_some_value)
+  (run-test-equal "automatic cleanup of temp map-reduce stores"
+		  2 ;expect two becuase I used :keeptemp t once.. 
+		  (length (cl-mongo::mr.collections)))
+  ;;keep here; needs some time..
+  (mr.gc.all)
+  (db.run-command :drop :collection "testit" )
+  (run-test-equal "clean up all mr collections"
+		  0
+		  (length (cl-mongo::mr.collections)))
   (reset-test-collection collection 0))
 
 ;;--------------------------------------------------------------------------
@@ -500,12 +563,14 @@
     (db.find-advanced-query-regression :collection collection :size size :wait wait))
   (with-test-package "advanced query regression elements; part 2"
     (db.find-advanced-query-regression-2 :collection collection :size size :wait wait))
-  (with-test-package "test indexing"
-    (test-indexing :collection collection :size size :wait wait))
   (with-test-package "test update modifiers"
     (test-modifiers :collection collection :size size :wait wait))
   (with-test-package "test java script (local and remote)"
     (test-javascript :collection collection :size size :wait wait))
+  (with-test-package "test map-reduce)"
+    (test-map-reduce :collection collection :size size :wait wait))
+  (with-test-package "test indexing"
+    (test-indexing :collection collection :size size :wait wait))
   (with-test-package "test serialization; inspect visually"
     (test-serialization :collection collection :size size :wait wait)))
 
