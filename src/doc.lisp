@@ -110,8 +110,6 @@ appending the api documentation to <path>/doc/readme-base.md.
       (format t "error [~A] on writing the readme to ~A. Is *REPO-ROOT* [~A] set ok ?" c path *REPO-ROOT*))))
   
 ;----
-(defun test-segment()
-  (let ((str "hello <!-- this is a comment --> world and <!-- an other comment --> foo"))
-    (strip-comments str)))
+
 
 

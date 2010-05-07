@@ -217,13 +217,24 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#$<="><code>$<=</code></a>
       <li><a href="#$>"><code>$></code></a>
       <li><a href="#$>="><code>$>=</code></a>
+      <li><a href="#$add-to-set"><code>$add-to-set</code></a>
       <li><a href="#$all"><code>$all</code></a>
       <li><a href="#$em"><code>$em</code></a>
       <li><a href="#$exists"><code>$exists</code></a>
       <li><a href="#$in"><code>$in</code></a>
+      <li><a href="#$inc"><code>$inc</code></a>
       <li><a href="#$index"><code>$index</code></a>
+      <li><a href="#$map-reduce"><code>$map-reduce</code></a>
       <li><a href="#$mod"><code>$mod</code></a>
       <li><a href="#$not"><code>$not</code></a>
+      <li><a href="#$pop-back"><code>$pop-back</code></a>
+      <li><a href="#$pop-front"><code>$pop-front</code></a>
+      <li><a href="#$pull"><code>$pull</code></a>
+      <li><a href="#$pull-all"><code>$pull-all</code></a>
+      <li><a href="#$push"><code>$push</code></a>
+      <li><a href="#$push-all"><code>$push-all</code></a>
+      <li><a href="#$set"><code>$set</code></a>
+      <li><a href="#$unset"><code>$unset</code></a>
       <li><a href="#$where"><code>$where</code></a>
       <li><a href="#*mongo-default-db*"><code>*mongo-default-db*</code></a>
       <li><a href="#*mongo-default-host*"><code>*mongo-default-host*</code></a>
@@ -239,6 +250,7 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#db.count"><code>db.count</code></a>
       <li><a href="#db.create-collection"><code>db.create-collection</code></a>
       <li><a href="#db.delete"><code>db.delete</code></a>
+      <li><a href="#db.distinct"><code>db.distinct</code></a>
       <li><a href="#db.ensure-index"><code>db.ensure-index</code></a>
       <li><a href="#db.eval"><code>db.eval</code></a>
       <li><a href="#db.find"><code>db.find</code></a>
@@ -253,12 +265,16 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#db.stop"><code>db.stop</code></a>
       <li><a href="#db.update"><code>db.update</code></a>
       <li><a href="#db.use"><code>db.use</code></a>
+      <li><a href="#defjs"><code>defjs</code></a>
+      <li><a href="#defsrvjs"><code>defsrvjs</code></a>
       <li><a href="#docs"><code>docs</code></a>
       <li><a href="#document"><code>document</code></a>
       <li><a href="#generate-readme"><code>generate-readme</code></a>
       <li><a href="#get-element"><code>get-element</code></a>
       <li><a href="#ht->document"><code>ht->document</code></a>
+      <li><a href="#install-js"><code>install-js</code></a>
       <li><a href="#iter"><code>iter</code></a>
+      <li><a href="#jsdef"><code>jsdef</code></a>
       <li><a href="#kv"><code>kv</code></a>
       <li><a href="#make-document"><code>make-document</code></a>
       <li><a href="#mongo"><code>mongo</code></a>
@@ -266,10 +282,15 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#mongo-close"><code>mongo-close</code></a>
       <li><a href="#mongo-show"><code>mongo-show</code></a>
       <li><a href="#mongo-swap"><code>mongo-swap</code></a>
+      <li><a href="#mr.gc"><code>mr.gc</code></a>
+      <li><a href="#mr.gc.all"><code>mr.gc.all</code></a>
+      <li><a href="#mr.p"><code>mr.p</code></a>
       <li><a href="#nd"><code>nd</code></a>
       <li><a href="#now"><code>now</code></a>
       <li><a href="#nwd"><code>nwd</code></a>
       <li><a href="#pp"><code>pp</code></a>
+      <li><a href="#remove-js"><code>remove-js</code></a>
+      <li><a href="#ret"><code>ret</code></a>
       <li><a href="#rm"><code>rm</code></a>
       <li><a href="#rm-element"><code>rm-element</code></a>
       <li><a href="#show"><code>show</code></a>
@@ -411,6 +432,18 @@ current version is 0.1.0.
 
 
 
+<p><br>[Macro]<br><a class=none name='$add-to-set'><b>$add-to-set</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
 <p><br>[Macro]<br><a class=none name='$all'><b>$all</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
@@ -459,10 +492,36 @@ current version is 0.1.0.
 
 
 
+<p><br>[Macro]<br><a class=none name='$inc'><b>$inc</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
 <p><br>[Macro]<br><a class=none name='$index'><b>$index</b> <i>collection <tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
 
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$map-reduce'><b>$map-reduce</b> <i>collection map reduce <tt>&amp;key</tt> query limit out keeptemp finalize verbose</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Run map reduce on the mongo server. map and reduce are either the names of the 
+javascript functions, created with defjs or defsrvjs or are function definitions in javascript.
+The keywords refer to option available for map reduce in mongo. This returns a result summary document.
 
 </blockquote>
 
@@ -484,6 +543,102 @@ current version is 0.1.0.
 
 
 <p><br>[Macro]<br><a class=none name='$not'><b>$not</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$pop-back'><b>$pop-back</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$pop-front'><b>$pop-front</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$pull'><b>$pull</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$pull-all'><b>$pull-all</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$push'><b>$push</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$push-all'><b>$push-all</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$set'><b>$set</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='$unset'><b>$unset</b> <i><tt>&amp;rest</tt> args</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
 
@@ -674,8 +829,20 @@ create a collection
 Delete a document from a collection. The *document* field is used to identify the document to
 be deleted.  
 You can enter a list of documents. In that the server will be contacted to delete each one of these.
-It may be more efficient to run a delete script on he server side.
+It may be more efficient to run a delete script on the server side.
 
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Generic function]<br><a class=none name='db.distinct'><b>db.distinct</b> <i>collection key <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Return all the distinct values of this key in the collection 
 
 </blockquote>
 
@@ -880,6 +1047,40 @@ similar to cd -.
 
 
 
+<p><br>[Macro]<br><a class=none name='defjs'><b>defjs</b> <i>name args declaration* statement*</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Define client side javascript. Works like defun; body is in lisp, with parenscript
+   additions, like return. So (defjs hello (x y) (return (+ x y))) defines an adder. 
+   macro creates a lisp function which sends the javascript function over to the mongo 
+   server to be evaluated. Result is processed and returned to the reader. 
+   This will execute 10 times on the server :
+   (mapcar (lambda (x) (hello 10 x)) (list 1 2 3 4 5 6 7 8 9 10))
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='defsrvjs'><b>defsrvjs</b> <i>name args declaration* statement*</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Creates a function which stores and executes javascript on the server. The first time 
+   the function is called the javascript function is stored on the server. Subsequent calls will
+   call out to the server. 
+   Works like defun; the function body is defined in lisp, with parenscript additions. Since
+   the body of the function already resides on the server this should have less impact on 
+   the network. Use :install t to reinstall.
+
+</blockquote>
+
+
+
+
+
+
 <p><br>[Function]<br><a class=none name='docs'><b>docs</b> <i>result</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
@@ -953,11 +1154,35 @@ Convert a hash-table to a document.
 
 
 
+<p><br>[Macro]<br><a class=none name='install-js'><b>install-js</b> <i>name</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Allows server based javascripts the be installed without being run.
+
+</blockquote>
+
+
+
+
+
+
 <p><br>[Function]<br><a class=none name='iter'><b>iter</b> <i>result <tt>&amp;key</tt> mongo max-per-call</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
 Exhaustively iterate through a query. The maximum number of responses 
 per query can be specified using the max-per-call keyword.
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Macro]<br><a class=none name='jsdef'><b>jsdef</b> <i>name</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Return the body of the javascript function; otherwise nill.
 
 </blockquote>
 
@@ -1071,6 +1296,42 @@ and a new default connection is registered.
 
 
 
+<p><br>[Function]<br><a class=none name='mr.gc'><b>mr.gc</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+remove the temporary collections created by map-reduce
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Function]<br><a class=none name='mr.gc.all'><b>mr.gc.all</b> <i><tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+remove the all collections created by map-reduce, temporary as well as permanent
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Function]<br><a class=none name='mr.p'><b>mr.p</b> <i>results</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+show the contents of the results collection map-reduce created
+
+</blockquote>
+
+
+
+
+
+
 <p><br>[Function]<br><a class=none name='nd'><b>nd</b> <i>result <tt>&amp;key</tt> stream</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
@@ -1123,6 +1384,30 @@ ok in mosty cases. See nd for an alternative.
 
 
 
+<p><br>[Macro]<br><a class=none name='remove-js'><b>remove-js</b> <i>name</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Function]<br><a class=none name='ret'><b>ret</b> <i>result</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+return value bound to retval in a return document. Used for db.count, db.distinct, functions etc..
+
+</blockquote>
+
+
+
+
+
+
 <p><br>[Function]<br><a class=none name='rm'><b>rm</b> <i>collection query <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
@@ -1154,8 +1439,9 @@ Remove element identified by key from a document
 <p><br>[Generic function]<br><a class=none name='show'><b>show</b> <i>things <tt>&amp;key</tt> msg nl order</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-Print a list of things. Things can be users, databases, collections in the current database,
-the profile and more. Things is a keyword so (show &#039;users) will show all users.
+Print a list of things. Things can be users, databases, 
+collections in the current database,
+the profile and more. Things is a keyword so (show :users) will show all users.
 
 </blockquote>
 
@@ -1181,7 +1467,7 @@ Set the time zone appropriate for the current environment.
 
 Creates a connection to a mongodb, makes it the default connection 
   and evaluates the body form.
-  args uses the same keyword set as mongo (:db. :localhost :port)
+  args uses the same keyword set as mongo (:db :localhost :port)
   args is passed on to make-mongo when the connection is created.
 
 </blockquote>
