@@ -456,8 +456,8 @@
   (reset-test-collection collection 0))
 
 (defun test-map-reduce (&key (collection *test-collection*)  (size 23) (wait 1) )
+  (mr.gc.all)
   (reset-test-collection collection size wait)
-
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     (defjs map_keys()
       (emit this.name 900)
