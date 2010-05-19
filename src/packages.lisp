@@ -16,9 +16,12 @@
    :get-element
    :rm-element
    :ht->document
+   :mapdoc
+   :doc-id
 
    ;;commands
    :mongo
+   :mongo-registered
    :mongo-show
    :mongo-close
    :mongo-swap

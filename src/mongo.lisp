@@ -91,6 +91,12 @@ the default port is  27017; the default db is admin."))
 		  (db *mongo-default-db*) (name :default) )
   (or (gethash name (mongo-registry)) (make-mongo :host host :port port :db db :name name)))
 
+(defgeneric mongo-registered (name) 
+  (:documentation "Return a conection registered by this name or nil.."))
+
+(defmethod mongo-registered (name) 
+  (gethash name (mongo-registry)))
+
 (defun mongo-show()
   " Show all registered connections and their session id"
   (with-hash-table-iterator (iterator (mongo-registry))
