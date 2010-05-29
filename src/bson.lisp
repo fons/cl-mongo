@@ -70,10 +70,11 @@ clashed with the encoding for booleans..
 (defmethod bson-encode ( (key string) (value string) &key (array nil) (type +bson-data-string+) )
   (let ((array (or array (make-octet-vector +default-array-size+))))
     (labels ((encode-value (array)
-	       ;; length of the value string
-	       (add-octets (int32-to-octet (1+ (length value)) ) array)   
-               ;; value string, null terminated
-	       (add-octets (string-to-null-terminated-octet value) array))) 
+	       (let ((enc-val (string-to-null-terminated-octet value)))
+		 ;; length of the value string
+		 (add-octets (int32-to-octet (length enc-val)) array)   
+		 ;; value string, null terminated
+		 (add-octets enc-val array)))) 
       (call-next-method key value :array array :type type :encoder #'encode-value))))
 
 (defmethod bson-encode ( (key string) (value bson-binary-base) &key (array nil) (type +bson-data-binary+) )

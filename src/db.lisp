@@ -90,6 +90,7 @@ found in the collection. ':multi'  : Update all documents identified by the sele
 
 (defmethod db.update ( (collection string) (selector t) (new-document t) 
 		      &key (mongo nil) (upsert nil) (multi nil) )
+  ;;(format t "[---> db.update selector ~A~% new doc ~A]~%" selector new-document)
   (let ((mongo (or mongo (mongo))))
     (mongo-message mongo (mongo-update 
 			  (full-collection-name mongo collection) 
@@ -109,6 +110,8 @@ In other words this a a helper-function build around *db.insert* and *db.update*
 "))
 
 (defmethod db.save ( (collection string) (document document) &key (mongo nil) )
+  ;;(format t "---> in db.save ~A~%" document)
+  ;;(format t "---> in db.save : id ~A~%" (_id document))
   (db.update collection (kv "_id" (_id document) ) document :mongo (or mongo (mongo) ) :upsert t))
 
 (defmethod db.save ( (collection string) (document hash-table) &key (mongo nil) )
@@ -413,7 +416,7 @@ all the documents in the collection.
   (let* ((pwd (concatenate 'string username ":mongo:" password))
 	 (md5-pwd (hex-md5 pwd))
 	 (md5-pwd-str (ironclad:byte-array-to-hex-string md5-pwd)))
-    (format t "user: ~A ~% pwd : ~A ~% read only : ~A ~%" username md5-pwd-str readonly)
+    ;(format t "user: ~A ~% pwd : ~A ~% read only : ~A ~%" username md5-pwd-str readonly)
     (db.save "system.users" (kv (kv "user" username) (kv "pwd" md5-pwd-str)) :mongo mongo)))
 
 (defgeneric db.auth ( username password &key)

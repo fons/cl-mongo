@@ -52,9 +52,17 @@ is supplied.
 (defmethod rm-element ( (key string) (document document) ) 
   (remhash key (elements document)))
 
+(defgeneric get-id (id) )
+
+(defmethod get-id ( (id t) )
+    id)
+
+(defmethod get-id ( (id bson-oid) )
+    (id id))
+
 (defun doc-id (doc)
   "return the unique document id"
-  (id (_id doc)))
+  (get-id (_id doc)))
 
 ;;
 ;; When the to-hash-able finalizer is used, embedded docs/tables in the response aren't converted
@@ -121,7 +129,6 @@ is supplied.
 	(multiple-value-bind (exists-p key value) (iterator)
 	  (if exists-p (push (funcall fn key value) lst)))))
     (nreverse lst)))
-
 	       
 (defgeneric doc-elements (document) )
 

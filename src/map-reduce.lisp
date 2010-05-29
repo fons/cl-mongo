@@ -8,12 +8,13 @@
 		       (keeptemp nil) (finalize nil) (verbose t) )
   "Run map reduce on the mongo server. map and reduce are either the names of the 
 javascript functions, created with defjs or defsrvjs or are function definitions in javascript.
-The keywords refer to option available for map reduce in mongo. This returns a result summary document."
+The keywords refer to option available for map reduce in mongo. This returns a result summary document.
+When using :keeptemp t without specificing :out the collection is mr.<collection> "
     `(db.find "$cmd" (kv (kv "mapreduce" ,collection) 
 			 (kv "map"    (or (jsdef ,map) ',map ))
 			 (kv "reduce" (or (jsdef ,reduce) ',reduce))
 			 (when ,finalize (kv "finalize" (jsdef ,finalize)))
-			 (kv "out"      ,out) 
+			 (kv "out"      (if ,out ,out (concatenate 'string "mr." ,collection))) 
 			 (kv "verbose"  ,verbose)
 			 (kv "limit"    ,limit)
 			 (kv "keeptemp" ,keeptemp)

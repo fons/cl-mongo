@@ -6,7 +6,7 @@
 
 ;-------
 
-(defparameter *js-definitions* (make-hash-table) "hash table containing client side javascript")
+(defparameter *js-definitions* (make-hash-table :test 'equalp) "hash table containing client side javascript")
 
 (defmacro jsdef (name)
   "Return the body of the javascript function; otherwise nill."
@@ -17,6 +17,8 @@
   "Return the body of the javascript function as installed on the server; otherwise nill."
   `(db.find "system.js" (kv "_id" (string-downcase ',name))))
 
+(defun js-show()
+  (maphash (lambda (k v) (format t "~A:~A~%" k v)) *js-definitions*))
 
 ;     (if found
 ;	 value
