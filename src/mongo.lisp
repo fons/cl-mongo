@@ -182,21 +182,41 @@ and a new default connection is registered." ))
   #-(or clisp) (test-for-readback* stream timeout)
   #+clisp (test-for-readback-clisp stream timeout))
 
-
-(defmethod mongo-message* ( (mongo mongo) (message array) &key (timeout 5) ) 
-  (write-sequence message (mongo-stream mongo))
-  (force-output (mongo-stream mongo))
-  (usocket:wait-for-input (list (socket mongo) ) :timeout timeout)
-  (if (test-for-readback (mongo-stream mongo) timeout)
-	(progn 
-	  (let* ((reply  (make-octet-vector 1000 :init-fill 4 )) 
-		 (cursor (read-sequence reply (mongo-stream mongo) :start 0 :end 4))
-		 (rsz    (octet-to-int32 (subseq reply 0 4))))
-	    (unless (array-in-bounds-p reply rsz) (adjust-array reply rsz))
+(defun read-back (mongo)
+  (let* ((reply  (make-octet-vector 1000 :init-fill 4 )) 
+	 (cursor (read-sequence reply (mongo-stream mongo) :start 0 :end 4))
+	 (rsz    (octet-to-int32 (subseq reply 0 4))))
+    (unless (array-in-bounds-p reply rsz) (adjust-array reply rsz))
 	    (setf (fill-pointer reply) rsz) 
 	    (read-sequence reply (mongo-stream mongo) :start cursor)
 	    reply))
-	nil))
+
+(defun read-buffer (mongo timeout state &optional (accum nil))
+  (if state 
+      (read-buffer mongo timeout (test-for-readback (mongo-stream mongo) timeout) (cons (read-back mongo) accum))
+      (nreverse accum)))
+;  (read-buffer mongo timeout (test-for-readback (mongo-stream mongo) timeout) ))
+
+(defun read-ready (mongo timeout)
+  (multiple-value-bind (lst val) (usocket:wait-for-input (list (socket mongo) ) :timeout timeout)
+    (declare (ignore lst))
+    (if val
+	t
+	(read-ready mongo timeout))))
+;
+; If the timeout is set > 0, then output is expected, and the reader will be polled
+; until out is received...
+;
+(defmethod mongo-message* ( (mongo mongo) (message array) &key (timeout 5) ) 
+  (write-sequence message (mongo-stream mongo))
+  (force-output (mongo-stream mongo))
+  (if (zerop timeout)
+      nil
+      (progn
+	(read-ready mongo timeout)
+	(test-for-readback (mongo-stream mongo) timeout)
+	(read-back mongo))))
+
 
 (defmethod mongo-message ( (mongo mongo) (message array) &key (timeout 5) ) 
   (handler-case 

@@ -376,7 +376,6 @@ For most commands you can just uses the key-value shown in the mongo documentati
 (defmethod db.distinct ( (collection string) (key string) &key (mongo nil) )
   (db.find "$cmd" (kv (kv "distinct" collection) (kv "key" key)) :limit 1 :mongo mongo))
 	   
-	   
 
 (defun count-it(collection key)
   (db.find "$cmd" (kv (kv "distinct" collection) (kv "key" key))))

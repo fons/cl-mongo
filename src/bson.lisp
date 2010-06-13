@@ -16,8 +16,6 @@
 (defconstant +bson-data-int32+    16  "bson 32 bit int encoding")
 (defconstant +bson-data-long+     18  "bson 64 bit int encoding")
 
-;function my_test() {
-;    db.foo.find().forEach(function (obj) {delete obj.k;db.foo.save(obj);});
 
 #|
 support for data-symbol was removed b/c in the current implementation it
@@ -213,8 +211,6 @@ clashed with the encoding for booleans..
 
 (defmethod bson-decode ( (code (eql +bson-data-code+)) array)
   (to-cstring array))
- 
-
 
 (defmethod bson-decode ( (code (eql +bson-data-binary+)) array)
   (let* ((type (octet-to-byte  (subseq array 4 5)))
@@ -246,48 +242,133 @@ clashed with the encoding for booleans..
 (defmethod bson-decode ( (code (eql +bson-data-date+)) array)
   (values (make-bson-time (octet-to-uint64 (subseq array 0 8))) (subseq array 8)))
 
-#|
-  Compound Types : arrays, objects 
-  This deals with the extraction of data objects, arrays and general replies
-  Should be merged because they're all similar !
-|#
 
-(defun array@eoo (array) 
-  (and (eql 1 (length array)) (eql (aref array 0) 0)))
+;;
+;; Reads the byte stream and constructs a list of triples of (type key buffer) for each 
+;; distinct bson object on the stream. The elements
+;;
+(defconstant --ee-get-type--        0 "initialize and read the type from the byte stream")
+(defconstant --ee-get-key--         1 "read the key from the byte stream")
+(defconstant --ee-get-buffer-size-- 2 "read the buffer size for variable sized data")
+(defconstant --ee-get-element--     3 "read the element data")
 
-(defun extract-elements (array accum)
-  ;;(format t "array : ~A | accum ~A ~%" array accum)
-  (if (array@eoo array)
-      accum
-      (progn 
-	(let* ((obj-type (octet-to-byte  (subseq array 0 1) ))
-	       (eos      (1+ (position 0  (subseq array 1))))
-	       (key      (null-terminated-octet-to-string (subseq array 1 (+ 1 eos)) eos))
-	       (buffer   (subseq array (+ 1 eos))))
-	  (multiple-value-bind (value rest)  (bson-decode obj-type buffer) 
-	    (extract-elements rest (cons (list obj-type key value ) accum)))))))
+(defun extract-elements(array)
+  (let ((key    (make-octet-vector 50))
+	(szbuf  (make-octet-vector 4))
+	(buffer (make-octet-vector 10000))
+	(type   nil)
+	(state  --ee-get-type--)
+	(elsize 0)
+	(lst () ))
+    (labels ((init-vars()
+	       (setf (fill-pointer key)    0)
+	       (setf (fill-pointer szbuf)  0)
+	       (setf (fill-pointer buffer) 0)
+	       (setf elsize 0)
+	       (setf type   nil)
+	       (setf state  --ee-get-type--))
+	     ; store triple on the triple list
+	     (store-triple ()
+	       (push (list type (babel:octets-to-string key) (copy-seq buffer)) lst))
+	     ; extract type
+	     ; since this is the start initialization happens as well
+	     ;; transition to the key-read state
+	     (get-type (c)
+	       (init-vars)
+	       (setf type  c)
+	       (setf state --ee-get-key--))
+	     ;; for variable types we need to get the size first
+	     (nxt-state (type)
+	       (cond ( (eql type +bson-data-string+)   --ee-get-buffer-size--) 
+		     ( (eql type +bson-data-object+)   --ee-get-buffer-size--)
+		     ( (eql type +bson-data-array+ )   --ee-get-buffer-size--)
+		     ( (eql type +bson-data-binary+)   --ee-get-buffer-size--)
+		     ( (eql type +bson-data-code+)     --ee-get-buffer-size--)
+		     ( t                               --ee-get-element--)))
+	     ;; Return the size based on the type.
+	     ;; For variable size types we need to get the size first. That's usually
+	     ;; stored in an integer array.
+	     (nxt-size (type)
+	       (cond ( (eql type +bson-data-number+)   8) 
+		     ( (eql type +bson-data-oid+)     12)
+		     ( (eql type +bson-data-boolean+)  1)
+		     ( (eql type +bson-data-long+)     8)
+		     ( (eql type +bson-data-int32+)    4)
+		     ( (eql type +bson-data-date+)     8)
+		     ( (eql type +bson-data-null+)     0)
+		     ( t                               4)))
+	     ;; add chars to the key buffer, incl 0; then transition to the buffer reader
+	     (get-key (c)
+	       (if (eql 0 c) (progn
+			       (setf state (nxt-state type))
+			       (setf elsize (nxt-size type)))
+		   (add-to-array c key)))
+	     ;; for arrays and such we 've already read 4 bytes; we include the
+	     ;; eoo as well
+	     (normalize-size (size)
+	       (cond ((eql type +bson-data-string+) size)
+		     ((eql type +bson-data-code+)   size)
+		     ((eql type +bson-data-binary+) (+ 1 size)) ;include type byte
+		     (t        (- size 4))))
+	     ;; variable elements are preceded by an integer stating their size.
+	     ;; that needs to be decoded first..
+	     (get-size (c)
+	       (add-to-array c buffer)
+	       (add-to-array c szbuf)
+	       (decf elsize)
+	       (when (zerop elsize) 
+		 (progn 
+		   (setf elsize (normalize-size (octet-to-int32 szbuf)))
+		   (setf state  --ee-get-element--))))
+	     ;;read element data
+	     (get-element(c)
+	       (add-to-array c buffer)
+	       (decf elsize)
+	       (when (zerop elsize) 
+		 (progn
+		   (setf state --ee-get-type--)
+		   (store-triple))))
+	     ;; this is where the state machine is executed
+	     (parse-stream (c)
+	       (cond ((eql state --ee-get-type--)        (get-type c))
+		     ((eql state --ee-get-key--)         (get-key  c))
+		     ((eql state --ee-get-buffer-size--) (get-size c))
+		     ((eql state --ee-get-element--)     (get-element c))
+		     ( t            (format t "state not recognized...~%"))))
+	     ;;apply the decoders to the bson elements..
+	     (codecs (triple)
+	       (let ((type   (car triple))
+		     (key    (cadr triple))
+		     (buffer (caddr triple)))
+		 (multiple-value-bind (value rest) (bson-decode type buffer)
+		   (declare (ignore rest))
+		   (list key value)))))
+      (map nil #'parse-stream  array)
+      (mapcar #'codecs lst))))
 
-(defun to-element (array) 
-  (let* ((obj-size (octet-to-int32 (subseq array 0 4) ))
-	 (rest     (subseq array 4)))
-    (list obj-size (extract-elements rest () ))))
-
-(defun to-hash-map (array)
-  (labels ((to-element* (array)
-	     (let ((elem (to-element array)))
-	       (values (car elem) (cadr elem)))))  
-    (let ((ht (make-hash-table :test 'equal)))
-      (multiple-value-bind (size array) (to-element* array)
-	(declare (ignore size))
-      ;; remove the type prefix
-      (mapcar (lambda (x) (setf (gethash (car x) ht) (cadr x)))  (mapcar #'cdr array)))
-      ht)))
-
-(defun array->ht (array) 
-  (to-hash-map array))
+;;
+;; This is the finalizer used to create documents from replies
+;;
 
 (defun to-document (array)
-    (ht->document (to-hash-map array)))
+  ;; split the decoded bson element array into the "_id" and the rest.
+  ;; Assumes the the first element is in fact the doc id. If not, cdrs down
+  ;; the list until it's found..
+  (labels ((split-on-_id (lst)
+	     (if (string= "_id" (car (car lst)) )
+		 (values (car lst) (cdr lst))
+		 (progn 
+		   (let ((l () )
+			 (_id nil))
+		     (dolist (vals lst)
+		       (if (string= (car vals) "_id") 
+			   (setf _id vals)
+			   (push vals l)))
+		     (values _id l))))))
+    (multiple-value-bind (_id rest)  (split-on-_id (extract-elements (subseq array 4)))
+      (let ((doc (make-document :oid (cadr _id) :size (length rest))))
+	(mapcar (lambda (x) (add-element (car x) (cadr x) doc)) rest)
+	doc))))
 
 (defun code-key-rest (array)
   (let* ((obj-type (octet-to-byte  (subseq array 0 1) ))
@@ -296,12 +377,14 @@ clashed with the encoding for booleans..
 	 (rest     (subseq array (+ 1 eos))))
     (values obj-type key rest)))
 
+(defun array@eoo (array) 
+  (and (eql 1 (length array)) (eql (aref array 0) 0)))
+
 (defun array@end (array) 
   (if (array@eoo array)
       0
       (length array)))
 
-;;this is the same as the 'main' extraction routine to-elements above; so the two should merge..
 (defmethod bson-decode ( (code (eql +bson-data-object+)) array)
   (let*  ((accum ())
 	  (array-size   (octet-to-int32 (subseq array 0 4) ))
@@ -326,6 +409,7 @@ clashed with the encoding for booleans..
 	(declare (ignore key))
 	(multiple-value-bind (value remainder) (bson-decode type rest)
 	  (setf array-buffer remainder)
-	  ;(push (list key value) accum))))
 	  (push value accum))))
     (values (reverse accum) rest)))
+
+

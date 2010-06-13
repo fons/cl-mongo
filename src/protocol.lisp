@@ -162,6 +162,10 @@
 		 (to-obj+ array ()))))
     (values (header array) (mapcar finalize (to-obj (subseq array 36))))))
 
+;    
+#|
+
+|#
 
 (defgeneric mongo-delete (collection object) 
   (:documentation "delete a mongo object"))
