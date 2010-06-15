@@ -37,7 +37,7 @@ which deletes all documents in foo, with field key equal to 1."
   (labels ((server-count() 
 	     (get-element "n" (car (docs (db.count collection :all :mongo mongo)))))
 	   (delete-docs ()
-	     (db.delete collection (docs (iter (db.find collection query :mongo mongo :limit 0))) :mongo mongo)))
+	     (db.delete collection (docs (iter (db.find collection query :selector "_id" :mongo mongo :limit 0))) :mongo mongo)))
     (do ((line (server-count)
 	       (server-count)))
 	((zerop line ))

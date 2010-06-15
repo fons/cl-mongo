@@ -1,7 +1,7 @@
 (in-package :cl-mongo)
 
 ;;
-;; This uses documentattion-template to generate reasonably useful 
+;; This uses documentation-template to generate reasonably useful 
 ;; documentation. Some of the edi weitz specific stuff is replaced.
 
 (defvar *REPO-ROOT* nil "root of the repository; used for documentation generation")

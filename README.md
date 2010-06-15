@@ -267,6 +267,7 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#db.use"><code>db.use</code></a>
       <li><a href="#defjs"><code>defjs</code></a>
       <li><a href="#defsrvjs"><code>defsrvjs</code></a>
+      <li><a href="#doc-id"><code>doc-id</code></a>
       <li><a href="#docs"><code>docs</code></a>
       <li><a href="#document"><code>document</code></a>
       <li><a href="#generate-readme"><code>generate-readme</code></a>
@@ -277,9 +278,11 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#jsdef"><code>jsdef</code></a>
       <li><a href="#kv"><code>kv</code></a>
       <li><a href="#make-document"><code>make-document</code></a>
+      <li><a href="#mapdoc"><code>mapdoc</code></a>
       <li><a href="#mongo"><code>mongo</code></a>
       <li><a href="#mongo"><code>mongo</code></a>
       <li><a href="#mongo-close"><code>mongo-close</code></a>
+      <li><a href="#mongo-registered"><code>mongo-registered</code></a>
       <li><a href="#mongo-show"><code>mongo-show</code></a>
       <li><a href="#mongo-swap"><code>mongo-swap</code></a>
       <li><a href="#mr.gc"><code>mr.gc</code></a>
@@ -522,6 +525,7 @@ current version is 0.1.0.
 Run map reduce on the mongo server. map and reduce are either the names of the 
 javascript functions, created with defjs or defsrvjs or are function definitions in javascript.
 The keywords refer to option available for map reduce in mongo. This returns a result summary document.
+When using :keeptemp t without specificing :out the collection is mr.&lt;collection&gt; 
 
 </blockquote>
 
@@ -1081,6 +1085,18 @@ Creates a function which stores and executes javascript on the server. The first
 
 
 
+<p><br>[Function]<br><a class=none name='doc-id'><b>doc-id</b> <i>doc</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+return the unique document id
+
+</blockquote>
+
+
+
+
+
+
 <p><br>[Function]<br><a class=none name='docs'><b>docs</b> <i>result</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
@@ -1208,12 +1224,22 @@ The server will assign a unique is if a list of key-value pairs is saved.
 
 
 
-<p><br>[Function]<br><a class=none name='make-document'><b>make-document</b> <i><tt>&amp;key</tt> oid</i> =&gt; <i>result</i></a>
+<p><br>[Function]<br><a class=none name='make-document'><b>make-document</b> <i><tt>&amp;key</tt> oid size</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-
 Constructor.  key &#039;:oid&#039; is a user supplied unique id. An internal id will be generated if none 
-is supplied.
+   is supplied.
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Function]<br><a class=none name='mapdoc'><b>mapdoc</b> <i>fn document</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
 
 
 </blockquote>
@@ -1259,6 +1285,18 @@ Close the connection to the mongo database.
 The name should uniquely identify the connection to close.
 This is either a mongo object or the name the object is bound to 
 in the connection registry. To close all open connections use the special symbol &#039;all
+
+</blockquote>
+
+
+
+
+
+
+<p><br>[Generic function]<br><a class=none name='mongo-registered'><b>mongo-registered</b> <i>name</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+Return a conection registered by this name or nil..
 
 </blockquote>
 

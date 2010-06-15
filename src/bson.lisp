@@ -252,8 +252,9 @@ clashed with the encoding for booleans..
 (defconstant --ee-get-buffer-size-- 2 "read the buffer size for variable sized data")
 (defconstant --ee-get-element--     3 "read the element data")
 
-(defun extract-elements(array)
-  (let ((key    (make-octet-vector 50))
+(defun extract-elements(base-array)
+  (let ((array  (subseq base-array 4)) ;; skip the size indicator
+	(key    (make-octet-vector 50))
 	(szbuf  (make-octet-vector 4))
 	(buffer (make-octet-vector 10000))
 	(type   nil)
@@ -343,8 +344,9 @@ clashed with the encoding for booleans..
 		 (multiple-value-bind (value rest) (bson-decode type buffer)
 		   (declare (ignore rest))
 		   (list key value)))))
-      (map nil #'parse-stream  array)
-      (mapcar #'codecs lst))))
+      (progn
+	(map nil #'parse-stream  array)
+	(mapcar #'codecs (nreverse lst))) )))
 
 ;;
 ;; This is the finalizer used to create documents from replies
@@ -365,51 +367,15 @@ clashed with the encoding for booleans..
 			   (setf _id vals)
 			   (push vals l)))
 		     (values _id l))))))
-    (multiple-value-bind (_id rest)  (split-on-_id (extract-elements (subseq array 4)))
+    (multiple-value-bind (_id rest)  (split-on-_id (extract-elements array))
       (let ((doc (make-document :oid (cadr _id) :size (length rest))))
 	(mapcar (lambda (x) (add-element (car x) (cadr x) doc)) rest)
 	doc))))
 
-(defun code-key-rest (array)
-  (let* ((obj-type (octet-to-byte  (subseq array 0 1) ))
-	 (eos      (1+ (position 0  (subseq array 1))))
-	 (key      (null-terminated-octet-to-string (subseq array 1 (+ 1 eos)) eos))
-	 (rest     (subseq array (+ 1 eos))))
-    (values obj-type key rest)))
-
-(defun array@eoo (array) 
-  (and (eql 1 (length array)) (eql (aref array 0) 0)))
-
-(defun array@end (array) 
-  (if (array@eoo array)
-      0
-      (length array)))
 
 (defmethod bson-decode ( (code (eql +bson-data-object+)) array)
-  (let*  ((accum ())
-	  (array-size   (octet-to-int32 (subseq array 0 4) ))
-	  (array-buffer (subseq array 4 array-size))
-	  (rest         (subseq array array-size)))
-    (do () ((zerop (array@end array-buffer) ))
-      (multiple-value-bind (type key rest) (code-key-rest array-buffer)    
-	(multiple-value-bind (value remainder) (bson-decode type rest)
-	  (setf array-buffer remainder)
-	  (push (list type key value) accum))))
-    (let ((ht (make-hash-table :test 'equal)))
-      (mapcar (lambda (x) (setf (gethash (car x) ht) (cadr x)))  (mapcar #'cdr accum))
-      (values (ht->document ht) rest))))
+  (extract-elements array))
 
 (defmethod bson-decode ( (code (eql +bson-data-array+)) array)
-  (let* ((accum ())
-	 (array-size   (octet-to-int32 (subseq array 0 4) ))
-	 (array-buffer (subseq array 4 array-size))
-	 (rest         (subseq array array-size)))
-    (do () ((zerop (array@end array-buffer) ))
-      (multiple-value-bind (type key rest) (code-key-rest array-buffer)    
-	(declare (ignore key))
-	(multiple-value-bind (value remainder) (bson-decode type rest)
-	  (setf array-buffer remainder)
-	  (push value accum))))
-    (values (reverse accum) rest)))
-
+  (mapcar (lambda (p) (cadr p)) (extract-elements array)))
 
