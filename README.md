@@ -1,6 +1,5 @@
 # cl-mongo
 
-
 ## Intro
 
 [mongo is a scalable, high-performance, open source, schema-free, document-oriented database.](http://www.mongodb.org). 
