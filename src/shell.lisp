@@ -54,6 +54,12 @@ ok in mosty cases. See nd for an alternative.
   nil)
 
 (defmethod pp ( (result cons) &key (stream t) (nd nil) )
+  (let ((str 
+	 (with-output-to-string (stream)
+	   (pp* result :stream stream :nd nd))))
+    (format stream "~A~%" str)))
+
+(defmethod pp* ( (result cons) &key (stream t) (nd nil) )
   (labels ((br+ ()
 	     (unless nd (format stream "~%{")))
 	   (br- ()
@@ -103,6 +109,7 @@ ok in mosty cases. See nd for an alternative.
     (dolist (d (docs result)) 
       (pp-doc d)
       )))
+
 
 (defun nd (result &key (stream t) )
   "Pretty-print for non-document responses, like the response to a database command."
@@ -222,4 +229,6 @@ the profile and more. Things is a keyword so (show :users) will show all users."
 (defmethod show ( (things (eql :errors)) &key (order '(:rest)))
   (show :lasterror)
   (show :preverror)) 
+
+;;---------------------
 

@@ -345,8 +345,14 @@ clashed with the encoding for booleans..
 		   (declare (ignore rest))
 		   (list key value)))))
       (progn
+	;(format t "start parser ~%")
 	(map nil #'parse-stream  array)
-	(mapcar #'codecs (nreverse lst))) )))
+	;(format t "parser done ; codecs started ~%")
+	(prog1 
+	    (mapcar #'codecs (nreverse lst))
+	  ;(format t "codecs done..~%")
+	  )))))
+	  
 
 ;;
 ;; This is the finalizer used to create documents from replies
