@@ -30,6 +30,7 @@
 		 (:file "bson-regex")
 		 (:file "bson-code")
 		 (:file "bson")
+		 (:file "bson-decode")
 		 (:file "bson-array")
 		 (:file "document")
 		 (:file "mongo-syntax")

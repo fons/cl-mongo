@@ -125,7 +125,6 @@
     (add-octets cursor arr)                                ; cursor id
     (set-octets 0 (int32-to-octet (length arr) ) arr)      ; set message length
     arr))
-  
 
 (defgeneric mongo-reply (array &key finalize) 
   (:documentation "extract reply parameters"))
@@ -134,38 +133,22 @@
   (declare (ignore finalize))
   )
 
-;;
-;; Not everything is going to be a complete document
-;;
-(defmethod mongo-reply ( (array array) &key (finalize (lambda (x) x) ) )
+(defun mongo-reply ( array )
   (labels ((header (array)
 	     (let ((lst ()))
-	       (push (octet-to-int32 (subseq array 0 4))   lst)   ; length
-	       (push (octet-to-int32 (subseq array 4 8))   lst)   ; request id
-	       (push (octet-to-int32 (subseq array 8 12))  lst)   ; response to
-	       (push (octet-to-int32 (subseq array 12 16)) lst)   ; opcode
-	       (push (octet-to-int32 (subseq array 16 20)) lst)   ; response flag
-	       (push (octet-to-int64 (subseq array 20 28)) lst)   ; cursor id
-	       (push (octet-to-int32 (subseq array 28 32)) lst)   ; starting from
-	       (push (octet-to-int32 (subseq array 32 36)) lst)   ; returned
-	       (nreverse lst)))
-	   (to-obj+ ( array  accum)
-	     (let* ((len   (octet-to-int32 (subseq array 0 4)))
-		    (head  (subseq array 0 len) )
-		    (rest  (subseq array len) ))
-	       (if (zerop (length rest) )
-		   (nreverse (cons head  accum))
-		   (to-obj+ rest (cons head accum) ))))
-	   (to-obj (array)
-	     (if (zerop (length array))
-		 nil
-		 (to-obj+ array ()))))
-    (values (header array) (mapcar finalize (to-obj (subseq array 36))))))
+	       (push (octet-to-int32.1 array 0)   lst)   ; length
+	       (push (octet-to-int32.1 array 4)   lst)   ; request id
+	       (push (octet-to-int32.1 array 8)   lst)   ; response to
+	       (push (octet-to-int32.1 array 12)  lst)   ; opcode
+	       (push (octet-to-int32.1 array 16)  lst)   ; response flag
+	       (push (octet-to-int64.1 array 20)  lst)   ; cursor id
+	       (push (octet-to-int32.1 array 28)  lst)   ; starting from
+	       (push (octet-to-int32.1 array 32)  lst)   ; returned
+	       (nreverse lst))))
+    (let ((head (header array)))
+      (values head  (bson-decode (car head) 36 (nth 7 head)  array)))))
 
-;    
-#|
 
-|#
 
 (defgeneric mongo-delete (collection object) 
   (:documentation "delete a mongo object"))

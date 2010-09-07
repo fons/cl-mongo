@@ -19,6 +19,8 @@ A note of the bson-array design
 
 |#
 
+(defun make-int-vector (sz &key (init-fill 0) )
+  (make-array sz :element-type 'integer :initial-element 0 :fill-pointer init-fill :adjustable t))
 
 (defclass bson-array()
   ((array :initarg :data-array :accessor data-array)
@@ -26,6 +28,7 @@ A note of the bson-array design
 
 ;; terminate the bson array with a nul and
 ;; encode the length in the first for bytes..
+
 
 (defun normalize-array(array)
     (null-terminate-array array)
@@ -37,7 +40,7 @@ A note of the bson-array design
 (defun make-bson-array(&key (size 10))
   (let ((array (make-instance 'bson-array 
 			      :data-array (add-octets (int32-to-octet 0) (make-octet-vector (+ size 4)))
-			      :index-array (make-octet-vector 5))))
+			      :index-array (make-int-vector 5))))
     (normalize-bson-array array)
     array))
 
@@ -114,9 +117,5 @@ A note of the bson-array design
 				(car list) (cons (cdr list) stack) (cons (make-bson-array) bson-array-stack)))
 	  ( t  (bson-encode-cons (cdr list) stack (encode-cons-helper-1 (car list) bson-array-stack))))))
 
-(defmethod bson-encode ( (key string) (value cons) &key (array nil array-supplied-p) 
-			(size 10 size-supplied-p) 
-			(type +bson-data-array+) (encoder nil))
-  (declare (ignore encoder) (ignore array) (ignore type) (ignore size) 
-	   (ignore size-supplied-p) (ignore array-supplied-p) )
+(defmethod bson-encode ( (key string) (value cons) &key )
   (bson-encode key (bson-encode-cons value () (list (make-bson-array :size (* (length value) 12))))))

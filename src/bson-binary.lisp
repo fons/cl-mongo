@@ -1,5 +1,6 @@
 (in-package :cl-mongo)
 
+(defconstant +bson-binary-generic+  #x00 "binary/generic")
 (defconstant +bson-binary-function+ #x01 "function")
 (defconstant +bson-binary+          #x02 "ordinary binary")
 (defconstant +bson-binary-uuid+     #x03 "uuid")

@@ -10,9 +10,10 @@ Typical ue would be in conjunction with db.find like so (docs (iter (db.find 'fo
   (cadr (db.stop result)))
   
 (defun iter ( result &key (mongo nil) (max-per-call 0) )
-"Exhaustively iterate through a query. The maximum number of responses 
-per query can be specified using the max-per-call keyword."
+  "Exhaustively iterate through a query. The maximum number of responses 
+   per query can be specified using the max-per-call keyword."
     (loop 
+       ;;(format t "length of result set : ~A~%" (length result))
        (setf result (db.iter result :mongo mongo :limit max-per-call ) )
        (when (zerop (db.iterator result) ) (return result) )))
 
@@ -41,7 +42,7 @@ which deletes all documents in foo, with field key equal to 1."
     (do ((line (server-count)
 	       (server-count)))
 	((zerop line ))
-      (delete-docs))))
+      (delete-docs)) ))
 
 (defgeneric pp (result &key)
   (:documentation "

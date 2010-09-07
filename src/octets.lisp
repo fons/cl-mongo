@@ -98,4 +98,24 @@
 (defun positive(val)
   (if (< 0 val) t nil))
 
+;;------------------------------------------------
 
+(defun to-val.1(vec start size)
+  (let ((value 0))
+    (dotimes (position size)
+      (let ((pos (* 8 position)))
+	(setf (ldb (byte 8 pos) value) (aref vec (+ start position)))))
+    value))
+
+
+(defun octet-to-int32.1 (vec start)
+  (to-signed-value (to-val.1 vec start 4) :size 31 :max-uint +max-uint32+)) 
+
+(defun octet-to-int64.1 (vec start)
+  (to-signed-value (to-val.1 vec start 8) :size 63 :max-uint +max-uint64+)) 
+
+(defun octet-to-uint64.1 (vec start)
+  (to-val.1 vec start 8) )
+
+(defun octet-to-byte.1 (vec start)
+  (to-val.1 vec start 1))

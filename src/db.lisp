@@ -26,7 +26,7 @@ mongo documentation.
 "))
 
 (defmethod db.find ( (collection string) (kv t) 
-		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
+			 &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
   (let ((mongo (or mongo (mongo))))
     (labels ((query ()
 	       (mongo-message mongo (mongo-query 
@@ -35,8 +35,9 @@ mongo documentation.
 				     :skip skip 
 				     :selector (bson-encode-container (expand-selector selector))
 				     :options options))))
-      (multiple-value-bind (header docs) (mongo-reply (query) :finalize 'to-document)
+      (multiple-value-bind (header docs) (mongo-reply (query) )
 	(list (append header (list collection)) docs)))))
+
 
 (defmethod db.find ( (collection symbol) (kv t) 
 		    &key (mongo nil) (options 0) (skip 0) (limit 1) (selector nil) )
@@ -128,12 +129,10 @@ In other words this a a helper-function build around *db.insert* and *db.update*
   (and (consp val)  (= 2 (length val)) (consp (car val)) (consp (cadr val))))
 
 (defun db.iterator ( result )
-"
-Returns the iterator from the result set.
-"
-    (cond ( (headerp result)      (values (nth 5 result)       (car (last result))       nil)          )
-	  ( (header+docsp result) (values (nth 5 (car result)) (car (last (car result))) (cadr result)) )
-	  ( t                     (values 0 nil nil)))) ;stop iteration
+  "Returns the iterator from the result set."
+  (cond ( (headerp result)      (values (nth 5 result)       (car (last result))       nil)          )
+	( (header+docsp result) (values (nth 5 (car result)) (car (last (car result))) (cadr result)) )
+	( t                     (values 0 nil nil)))) ;stop iteration
 
 
 (defgeneric db.next ( collection cursor-id &key ) 
@@ -155,7 +154,7 @@ Executes the next call on the iterator identified by cursor-id.
 	       (mongo-message mongo (mongo-get-more 
 				     (full-collection-name mongo collection) 
 				     (int64-to-octet cursor-id) :limit limit))))
-      (multiple-value-bind (header docs) (mongo-reply (get-more) :finalize 'to-document)
+      (multiple-value-bind (header docs) (mongo-reply (get-more))
 	(list (append header (list collection)) docs)))))
 
 (defgeneric db.iter ( result &key )

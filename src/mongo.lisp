@@ -216,6 +216,7 @@ and a new default connection is registered." ))
 	(read-ready mongo timeout)
 	(test-for-readback (mongo-stream mongo) timeout)
 	(read-back mongo))))
+	
 
 
 (defmethod mongo-message ( (mongo mongo) (message array) &key (timeout 5) ) 
