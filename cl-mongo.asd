@@ -7,12 +7,13 @@
 (asdf:defsystem cl-mongo
   :name   "cl-mongo"
   :author "Fons Haffmans; fons.haffmans@gmail.com"
-  :version "0.0.1"
+  :version "0.7"
   :licence "MIT"
-  :description "lisp system to interact with mongo, a non-sql db"
+  :description "lisp system to interact with mongodb, a non-sql db"
   :depends-on (:uuid
 	       :babel
-	       :documentation-template
+	       :bordeaux-threads
+	       ;;:documentation-template
 	       :lisp-unit
 	       :parenscript
 	       :usocket)
@@ -39,7 +40,9 @@
 		 (:file "protocol")
 		 (:file "mongo")
 		 (:file "db")
-		 (:file "doc")
+		 (:file "mem")
+		 (:file "do-query")
+		 ;;(:file "doc")
 		 (:file "map-reduce")
 		 (:file "shell")))
    (:static-file "README.md")
@@ -48,9 +51,9 @@
 (asdf:defsystem cl-mongo-test
   :name   "cl-mongo"
   :author "Fons Haffmans; fons.haffmans@gmail.com"
-  :version "0.0.1"
+  :version "0.7"
   :licence "MIT"
-  :description "tesing cl-mongo"
+  :description "testing cl-mongo"
   :depends-on (:cl-mongo)
   :serial t
   :components 

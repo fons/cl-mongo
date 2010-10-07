@@ -3,7 +3,7 @@
 (defun ht->list.1 (ht)
   (let ((lst ()))
     (maphash (lambda (k v) (push v lst)) ht)
-    lst))
+    (nreverse lst)))
 
 (defun end-of-key (start array)
   (let ((eol start)) 
@@ -189,8 +189,8 @@
 	     (incf pos)
 	     (push (funcall container ht) lst) )) 
 	 (decf docs)
-	 (when (= totlen pos) (return lst))
-	 (when (zerop docs)   (return lst))
+	 (when (= totlen pos) (return (nreverse lst)))
+	 (when (zerop docs)   (return (nreverse lst)))
 	 (go start-document)) )))
 
 

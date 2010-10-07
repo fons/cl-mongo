@@ -108,7 +108,11 @@
    :install-js
    :remove-js
 
+   ;; multi-threaded stuff 
+
+   :do-query
+
    ;; documentation generator
-   :generate-readme
-   :*REPO-ROOT*
+   ;;:generate-readme
+   ;;:*REPO-ROOT*
    ))
