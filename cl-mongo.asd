@@ -42,7 +42,7 @@
 		 (:file "db")
 		 (:file "mem")
 		 (:file "do-query")
-		 ;;(:file "doc")
+		 (:file "doc")
 		 (:file "map-reduce")
 		 (:file "shell")))
    (:static-file "README.md")
