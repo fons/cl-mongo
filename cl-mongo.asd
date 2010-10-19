@@ -13,7 +13,7 @@
   :depends-on (:uuid
 	       :babel
 	       :bordeaux-threads
-	       ;;:documentation-template
+	       :documentation-template
 	       :lisp-unit
 	       :parenscript
 	       :usocket)
