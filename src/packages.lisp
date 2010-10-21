@@ -8,8 +8,6 @@
    :*mongo-default-port*
    :*mongo-default-host*
    :*mongo-default-db*
-
-   ;; document
    :document
    :make-document
    :add-element
@@ -113,6 +111,6 @@
    :do-query
 
    ;; documentation generator
-   ;;:generate-readme
-   ;;:*REPO-ROOT*
+   :generate-readme
+   :*REPO-ROOT*
    ))

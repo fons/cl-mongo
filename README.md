@@ -1,5 +1,6 @@
 # cl-mongo
 
+
 ## Intro
 
 [mongo is a scalable, high-performance, open source, schema-free, document-oriented database.](http://www.mongodb.org). 
@@ -266,6 +267,7 @@ license</a> so you can basically do with it whatever you want.
       <li><a href="#db.use"><code>db.use</code></a>
       <li><a href="#defjs"><code>defjs</code></a>
       <li><a href="#defsrvjs"><code>defsrvjs</code></a>
+      <li><a href="#do-query"><code>do-query</code></a>
       <li><a href="#doc-id"><code>doc-id</code></a>
       <li><a href="#docs"><code>docs</code></a>
       <li><a href="#document"><code>document</code></a>
@@ -1084,6 +1086,18 @@ Creates a function which stores and executes javascript on the server. The first
 
 
 
+<p><br>[Function]<br><a class=none name='do-query'><b>do-query</b> <i>coll <tt>&amp;key</tt> map-fn reduce-fn initial-value query mongo limit selector</i> =&gt; <i>result</i></a>
+<blockquote><br>
+
+
+
+</blockquote>
+
+
+
+
+
+
 <p><br>[Function]<br><a class=none name='doc-id'><b>doc-id</b> <i>doc</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
@@ -1185,7 +1199,7 @@ Allows server based javascripts the be installed without being run.
 <blockquote><br>
 
 Exhaustively iterate through a query. The maximum number of responses 
-per query can be specified using the max-per-call keyword.
+   per query can be specified using the max-per-call keyword.
 
 </blockquote>
 
