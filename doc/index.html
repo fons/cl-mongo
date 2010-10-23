@@ -926,6 +926,11 @@ Creates a function which stores and executes javascript on the server. The first
 <p><br>[Function]<br><a class=none name='do-query'><b>do-query</b> <i>coll <tt>&amp;key</tt> map-fn reduce-fn initial-value query mongo limit selector</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
+ Performs a multi-threaded query on a mongo database.  coll is the collection name.  The reduce-fn keyword is used to specify a function which 
+will be called for each member of a batch of data returned from mongodb.  
+The reduce-fn function is executed while the query for the next batch is in progress. The default for reduce-fn is the identity function. 
+The reduction keyword is used to specify a function which is executed when the database queries have finished. 
+It&#039;s default implementation is to return a hash table, with the mongodb id as the hash key.  The query, mongo, limit and selector keywords are used in the same way as for db.find. 
 
 
 </blockquote>

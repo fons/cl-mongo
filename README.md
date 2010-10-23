@@ -11,26 +11,42 @@ This is not a driver (yet) as specified in the mongo documents; There is still s
 functionality I need to implement.
 
 
-Various features are missing such as serialization of binary data and code, 
-gridfs among other things.
+Except for gridfs most features have been implemented.
 
-In its current state cl-mongo provides the ability to insert, update and delete documents.
-It also supports indexing.
+cl-mongo provides the ability to insert, update
+and delete documents, indexing, searching using regexs etc.
+In addition it supports javascript in the repl (using a commonly
+available lisp to javascript compiler). This allows you to do use
+mongodb's map-reduce from the lisp repl.
 
-I developed this using *sbcl*, *clozure common lisp*, *clisp* and *allegro common lisp*.
+I developed this primarily using *sbcl* and to some extend *clozure
+common lisp* on the linux and mac osx platforms.
 
+This should also work on  *clisp* and *allegro common lisp* and windows.
+
+### multi-threading
+The *do-query* function uses multithreading to process the results of
+a batch as a query is in progress. This obviously requires that
+multi-threading is supported. I've found that as of now (2010-10-23)
+sbcl on mac osx doesn't support multithreading out of the box. So
+you'd need to compile a new sbcl with multithreading enabled, which is
+easy to do.
 
 ## Version
 
-   Version 0.5.0
+Version 0.9.0
 
-   This version is basically an alpha release. 
-   I've added regression testing for all features currently supported by cl-mongo.
+I've added regression testing for all features currently supported by cl-mongo.
    
    
 ## Installation
 
-Use asdf to install cl-mongo. 
+Use asdf to install cl-mongo.  cl-mongo depends on many other lisp
+libraries (which in turn have their own dependecies).  asdf is not a
+dependency manager, so you would need to install all dependencies as
+they come up as unavailable when you try to install cl-mongo.
+
+On the other hand, cl-mongo is included in quicklisp, which should make live easier.
 
 ## Testing
 
@@ -169,15 +185,13 @@ To declare a unique ascending index on "k" in collection "foo" , you can say :
 
 ## What's missing
 
-At least the following is missing :  
+At least the following is missing : 
 
 * Request id/ Response id are left 0 in the header.
-* Serialization of binary data.
-* Serialization of code scope.
-* Advanced queries like min/max queries, group by, snapshot support.
-* Aggregation except for distinct and group by.
 * GridFS
 * ......
+
+
 
 ## API documentation
 
@@ -185,7 +199,13 @@ I use Edi Weitz's [documentation template](http://weitz.de/documentation-templat
 to generate an api description based on embedded comments. 
 
 
+## News
 
+2010-10-23
+I've improved the read performance several orders of magnitude. This
+also reduces the memory foot pront quite a bit.
+
+In addition I've added a multi-threaded reader called do-query.
 <body bgcolor=white>
 
 <h2> CL-MONGO - api reference</h2>
@@ -1089,6 +1109,11 @@ Creates a function which stores and executes javascript on the server. The first
 <p><br>[Function]<br><a class=none name='do-query'><b>do-query</b> <i>coll <tt>&amp;key</tt> map-fn reduce-fn initial-value query mongo limit selector</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
+ Performs a multi-threaded query on a mongo database.  coll is the collection name.  The reduce-fn keyword is used to specify a function which 
+will be called for each member of a batch of data returned from mongodb.  
+The reduce-fn function is executed while the query for the next batch is in progress. The default for reduce-fn is the identity function. 
+The reduction keyword is used to specify a function which is executed when the database queries have finished. 
+It&#039;s default implementation is to return a hash table, with the mongodb id as the hash key.  The query, mongo, limit and selector keywords are used in the same way as for db.find. 
 
 
 </blockquote>
