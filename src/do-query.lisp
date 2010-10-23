@@ -130,6 +130,12 @@
 
 (defun do-query(coll &key (map-fn #'identity) (reduce-fn #'collect-to-hash) (initial-value (make-hash-table :test 'equal :size 100))
 		(query (bson-encode "query" (kv nil nil)) ) (mongo nil) (limit 0) (selector nil) )
+" Performs a multi-threaded query on a mongo database.  coll is the collection name.  The reduce-fn keyword is used to specify a function which 
+will be called for each member of a batch of data returned from mongodb.  
+The reduce-fn function is executed while the query for the next batch is in progress. The default for reduce-fn is the identity function. 
+The reduction keyword is used to specify a function which is executed when the database queries have finished. 
+It's default implementation is to return a hash table, with the mongodb id as the hash key.  The query, mongo, limit and selector keywords are used in the same way as for db.find. 
+"
   (let ((lock-q  (bordeaux-threads:make-lock "lock-q"))
 	(lock-r  (bordeaux-threads:make-lock "lock-q"))
 	(cv-q    (bordeaux-threads:make-condition-variable))
