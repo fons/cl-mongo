@@ -46,7 +46,7 @@ libraries (which in turn have their own dependecies).  asdf is not a
 dependency manager, so you would need to install all dependencies as
 they come up as unavailable when you try to install cl-mongo.
 
-On the other hand, cl-mongo is included in quicklisp, which should make live easier.
+On the other hand, cl-mongo is included in quicklisp, which should make life easier.
 
 ## Testing
 
@@ -72,7 +72,7 @@ Insert a key-value pair as the first document into collection "foo".
 Pretty-print the documents returned by the find command. iter will ensure that the cursor is
 fully iterated over.
 
-    (pp (iter (db.find "foo" 'all)))`
+    (pp (iter (db.find "foo" :all)))`
 
      {
         "_id" -> objectid(4B5CF28970DFF196A75FE1F0)
@@ -134,10 +134,10 @@ Print the current contents.
 Bind variable `*DOC*` to the second document returned by the find command, 
 add an other element and save back to the collection.
 
-      (defvar *DOC* (cadr (docs (db.find "foo" 'all))))`
+      (defvar *DOC* (cadr (docs (db.find "foo" :all))))`
       (add-element "tags" (list 'good 'bad 'ugly) *DOC*)
       (db.save "foo" *DOC*)
-      (pp (db.find "foo" 'all))
+      (pp (db.find "foo" :all))
 
       {
 	"_id" -> objectid(4B5CF28970DFF196A75FE1F0)
@@ -154,7 +154,7 @@ add an other element and save back to the collection.
 Check the status of the server.
 
       (db.use "admin")
-      (nd (db.run-command 'serverstatus))
+      (nd (db.run-command :serverstatus))
 
         "ok"  ->  1.0d0
 	  "mem"  -> 
