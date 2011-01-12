@@ -48,6 +48,7 @@
    :db.distinct
    :time-zone
    :date-time
+   :bson-time-to-ut
 
    ;; shell commands
    :nwd

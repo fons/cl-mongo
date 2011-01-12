@@ -13,6 +13,8 @@
   bson/mongo uses miliseconds since epoch (1/1/1970 0:0:0 GMT).
   this encapsulates that concept
 |#
+(defun bson-time-to-ut (bson-time) 
+  (floor (+ (/ (raw bson-time) +milliseconds-multiplier+) +java-script-epoch+)))
 
 (defun gmt-to-bson-time (gmt) 
   (* +milliseconds-multiplier+ (- gmt +java-script-epoch+)))
