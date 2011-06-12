@@ -7,12 +7,11 @@
 
 (defun end-of-key (start array)
   (let ((eol start)) 
-    (do ( (pos start (+ pos 1) ) )
-	( (= (elt array pos) 0) ) 
+    (do ( (pos start (+ pos 1) ) ) 
+	( (= (elt array pos) 0) )
       (incf eol)
       )
     eol))
-
 
 (defun bson-decode (totlen pos docs array &key (container #'ht->document.1 ) ) 
   (block nil
@@ -31,7 +30,6 @@
 		       (epos  (end-of-key pos array) )
 		       (key   (babel:octets-to-string array :start spos :end epos)))
 		  (setf pos (+ 1 epos))
-
 		  (cond 
 		    ( (= type +bson-data-number+) (progn
 						    (setf (gethash key ht) (decode-double-float-bits (octet-to-uint64.1 array pos)))
@@ -52,16 +50,25 @@
 		    ( (= type +bson-data-object+) (progn
 						    (let* ((size (octet-to-int32.1 array pos ))
 							   (eos  (- (+ pos size) 1) )) 
-						      (setf (gethash key ht) (car (bson-decode eos pos 1 array )))
-							  (setf pos (+ 1 eos))
-							  )
+						      (progn 
+							(if (> (elt array (+ pos 4)) 0)
+							    (setf (gethash key ht) (car (bson-decode eos pos 1 array )))
+							    (setf (gethash key ht) nil)
+							    )
+							(setf pos (+ 1 eos))
+						      ))
 						    ))
 		    
 		    ( (= type +bson-data-array+) (progn
 						   (let* ((size (octet-to-int32.1 array pos ))
 							  (eos  (- (+ pos size) 1) )) 
-						     (setf (gethash key ht) (car (bson-decode eos pos 1 array :container #'ht->list.1)))
-						     (setf pos (+ 1 eos))
+						     (progn
+						       (if (> (elt array (+ pos 4)) 0)
+							   (setf (gethash key ht) (car (bson-decode eos pos 1 array :container #'ht->list.1)))
+							   (setf (gethash key ht) nil)
+							   )
+						       (setf pos (+ 1 eos))
+						       )
 						     )
 						   ))
 

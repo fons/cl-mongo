@@ -124,6 +124,8 @@
 	(add-element "list-2" (list i (* i 2) (- i 3) (+ i 4)) doc)
 	(add-element (format nil "index-field") i doc)
 	(add-element (format nil "value-2-float") (* 7.8 i) doc)
+	(add-element (format nil "boolean true") t doc)
+	(add-element (format nil "boolean false") (not t) doc)
 	(db.insert collection doc )))))
 
 (defun insert-doc-with-arrays (collection n &key (host "localhost" ) (port *mongo-default-port*) (db "test"))
