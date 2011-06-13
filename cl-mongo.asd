@@ -16,6 +16,7 @@
 	       :documentation-template
 	       :lisp-unit
 	       :parenscript
+	       :split-sequence
 	       :usocket)
   :serial t
   :components 

@@ -50,7 +50,7 @@
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     (let ((all (length (docs (iter (db.find "foo" :all))))))
       (run-test "testing db.find :all; counts should match" size all)))
-;;; get the first document (this is not indexed so index may fail ro be equal to 0...
+;;; get the first document (this is not indexed so index may fail to be equal to 0...
   (with-mongo-connection (:host "localhost" :port *mongo-default-port* :db "test" ) 
     (let* ((documents (docs (iter (db.find "foo" :all :limit 1))))
 	   (index (get-element "index-this" (car documents))))

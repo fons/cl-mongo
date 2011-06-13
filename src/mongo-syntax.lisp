@@ -127,8 +127,8 @@
 	 ( t  (reduce (lambda (u v) (append u v)) (mapcar (lambda (x) (list x t)) ,@args)))))
 
 (defun collect-args (lst &optional accum)
-  (cond ( (atom lst) (values (list lst) nil)) 
-	( (null lst) (values (nreverse accum) lst))
+  (cond ( (null lst) (values (nreverse accum) lst))
+	( (atom lst) (values (list lst) nil)) 
 	( (not (keywordp (car lst) ) ) (error "unexpected format in collect-args"))
 	( (keywordp (cadr lst) ) (collect-args (cdr lst) (cons (car lst) accum)))
 	( (null (cadr lst))    (values (nreverse (cons (car lst) accum)) nil ))
