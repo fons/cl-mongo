@@ -12,6 +12,7 @@
    :make-document
    :add-element
    :get-element
+   :collect-all-elements
    :rm-element
    :ht->document
    :mapdoc
