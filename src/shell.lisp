@@ -36,7 +36,7 @@ Mongo allows for execution of java-script on the server side, which provides
 an alternative. Typical use would be (rm (iter (db.find 'foo' (kv 'key' 1)))),
 which deletes all documents in foo, with field key equal to 1."
   (labels ((server-count() 
-	     (get-element "n" (car (docs (db.count collection :all :mongo mongo)))))
+	     (get-element "n" (car (docs (db.count collection query :mongo mongo)))))
 	   (delete-docs ()
 	     (db.delete collection (docs (iter (db.find collection query :selector "_id" :mongo mongo :limit 0))) :mongo mongo)))
     (do ((line (server-count)
