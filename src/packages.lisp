@@ -17,6 +17,7 @@
    :ht->document
    :mapdoc
    :doc-id
+   :get-keys
 
    ;;commands
    :mongo
