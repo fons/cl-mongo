@@ -11,6 +11,10 @@
   ((data  :reader data  :initarg :data))
   (:documentation "bson binary type; this is the base class."))
 
+(defclass bson-binary-generic (bson-binary-base)
+  ((type-id  :reader type-id  :initform +bson-binary-generic+))
+  (:documentation "bson generic binary type"))
+
 (defclass bson-binary-function(bson-binary-base)
   ((type-id  :reader type-id  :initform +bson-binary-function+))
   (:documentation "bson function binary type"))
@@ -34,6 +38,9 @@
 (defgeneric bson-binary (type data)
   (:documentation "Create a bson serializable binary object. type is a keyword; either one of
 :function :binary :uuid :md5 or :user. data is the data encapsulated by this type."))
+
+(defmethod bson-binary ((type (eql +bson-binary-generic+)) data)
+  (make-instance 'bson-binary-generic :data data))
 
 (defmethod bson-binary ( (type (eql :function)) data)
   (make-instance 'bson-binary-function :data data))  
