@@ -15,5 +15,3 @@
 	  (if (slot-boundp bson-regex 'options) 
 	      (options bson-regex)
 	      "options not set..")))
-
-

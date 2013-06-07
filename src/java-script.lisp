@@ -1,10 +1,8 @@
 (in-package :cl-mongo)
 
-#|
-  Enable javascript in the lisp using parenscript
-|#
-
-;-------
+;;;
+;;;  Enable javascript in the lisp using parenscript
+;;;
 
 (defparameter *js-definitions* (make-hash-table :test 'equalp) "hash table containing client side javascript")
 
@@ -20,9 +18,9 @@
 (defun js-show()
   (maphash (lambda (k v) (format t "~A:~A~%" k v)) *js-definitions*))
 
-;     (if found
-;	 value
-;	 ',name)))
+;;     (if found
+;;	 value
+;;	 ',name)))
 
 (defmacro defjs (name args &body body)
   "Define client side javascript. Works like defun; body is in lisp, with parenscript
@@ -46,10 +44,10 @@
   `(let* ((js-body (make-bson-code (parenscript:ps (lambda ,args ,@body))))
 	  (server nil)
 	  (func-name (string-downcase ',name))
-	  (arg-list  (format nil "(~{~a~^, ~})" ',args))
+	  (arg-list (format nil "(~{~a~^, ~})" ',args))
 	  (jslambda (format nil "function ~A {return ~A~A;}" arg-list func-name arg-list)))
      (flet ((install (name)
-	      (setf server (mongo) )
+	      (setf server (mongo))
 	      (db.save "system.js" (kv (kv "_id" name) (kv "value" js-body)))))
        (setf (gethash ',name *js-definitions*) js-body)
        (defun ,name ,(append args '(&key (install nil)))
@@ -62,22 +60,23 @@
   "Allows server based javascripts the be installed without being run."
   `(db.save "system.js" (kv (kv "_id" (string-downcase ',name)) (kv "value" (jsdef ,name)))))
 
-;this may not be on the server; this is just to make sure..
+;; this may not be on the server; this is just to make sure..
 (defmacro remove-js (name)
-  `(progn (remhash ',name *js-definitions*)
-	  (db.delete "system.js" (kv "_id" (string-downcase ',name)))))
+  `(progn
+     (remhash ',name *js-definitions*)
+     (db.delete "system.js" (kv "_id" (string-downcase ',name)))))
 
 (ps:defpsmacro for-each (collection fun)
   "for-each is a parenscript macro which will map fun over every item in the mongodb collection."
-  `( (slot-value ((slot-value ,collection 'find)) 'for-each) #',fun))
+  `((slot-value ((slot-value ,collection 'find)) 'for-each) #',fun))
 
 (ps:defpsmacro transform (collection fun)
   "for-each is a parenscript macro which will map fun over every item in the mongodb collection.
    It will then save the item."
-  `( (slot-value ((slot-value ,collection 'find)) 'for-each) 
-     (lambda (obj) 
-       (,fun obj)
-       ((slot-value ,collection 'save) obj))))
+  `((slot-value ((slot-value ,collection 'find)) 'for-each)
+    (lambda (obj)
+      (,fun obj)
+      ((slot-value ,collection 'save) obj))))
 
 
 
