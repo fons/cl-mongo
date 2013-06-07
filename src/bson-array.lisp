@@ -19,18 +19,17 @@ A note of the bson-array design
 
 |#
 
-(defun make-int-vector (sz &key (init-fill 0) )
+(defun make-int-vector (sz &key (init-fill 0))
   (make-array sz :element-type 'integer :initial-element 0 :fill-pointer init-fill :adjustable t))
 
 (defclass bson-array()
   ((array :initarg :data-array :accessor data-array)
    (index-array :initarg :index-array :accessor index-array)))
 
-;; terminate the bson array with a nul and
+;; terminate the bson array with a null and
 ;; encode the length in the first for bytes..
 
-
-(defun normalize-array(array)
+(defun normalize-array (array)
     (null-terminate-array array)
     (set-array-length array :start 0))
 
@@ -45,7 +44,8 @@ A note of the bson-array design
     array))
 
 (defun pop-from-array(arr)
-  (when (positive (fill-pointer arr)) (vector-pop arr)))
+  (when (positive (fill-pointer arr))
+    (vector-pop arr)))
 
 (defgeneric bson-array-push (element array)
   (:documentation "push element to arrray"))
@@ -54,9 +54,9 @@ A note of the bson-array design
   (let ((key (format nil "~D" (fill-pointer (index-array array)))))
     (pop-from-array (data-array array)) ; remove terminating null
     (vector-push-extend (fill-pointer (data-array array)) (index-array array))
-    ; this skips the first four bytes returned from the encoding which
-    ; has the size of encoded object as well as the terminating nul 
-    ; (which does get added on by normalize !)
+    ;; this skips the first four bytes returned from the encoding which
+    ;; has the size of encoded object as well as the terminating null
+    ;; (which does get added on by normalize !)
     (add-octets (bson-encode key element) (data-array array)  :start 4 :from-end 1)
     (normalize-bson-array array)
     array))
@@ -80,21 +80,21 @@ A note of the bson-array design
 
 (defmethod  bson-array-reset ((array bson-array))
   (setf (fill-pointer (data-array array)) 0) 
-  (setf (fill-pointer (index-array array)) 0) )
+  (setf (fill-pointer (index-array array)) 0))
 
 (defmethod print-object ((arr bson-array) stream)
   (format stream "~% ~S [~A] ~A" (type-of arr) 
 	  (if (slot-boundp arr 'index-array) 
 	      (index-array arr)
 	      "no index array set..")
-	  (if (slot-boundp arr 'array) 
+	  (if (slot-boundp arr 'array)
 	      (data-array arr)
 	      "no array set..")))
 
 
-(defmethod bson-encode( (key string) (value bson-array) &key (array nil array-supplied-p) 
-		       (size 10 size-supplied-p) 
-		       (type +bson-data-array+) (encoder nil))
+(defmethod bson-encode ((key string) (value bson-array) &key (array nil array-supplied-p)
+                                                          (size 10 size-supplied-p)
+                                                          (type +bson-data-array+) (encoder nil))
   (let* ((size (if size-supplied-p size 10))
 	 (array (if array-supplied-p array (make-octet-vector size))))
     (labels ((encode-value (array)
@@ -110,12 +110,12 @@ A note of the bson-array design
 	     (cdr bson-array-stack))
 	   (encode-cons-done (list stack)
 	     (and (zerop (length list)) (zerop (length stack)))))
-    (cond ( (encode-cons-done list stack) (car bson-array-stack))
-	  ( (zerop (length list)) (bson-encode-cons (car stack) (cdr stack) 
-						    (encode-cons-helper-2 bson-array-stack)))
-	  ( (consp (car list)) (bson-encode-cons 
-				(car list) (cons (cdr list) stack) (cons (make-bson-array) bson-array-stack)))
-	  ( t  (bson-encode-cons (cdr list) stack (encode-cons-helper-1 (car list) bson-array-stack))))))
+    (cond ((encode-cons-done list stack) (car bson-array-stack))
+	  ((zerop (length list)) (bson-encode-cons (car stack) (cdr stack)
+                                                   (encode-cons-helper-2 bson-array-stack)))
+	  ((consp (car list)) (bson-encode-cons
+                               (car list) (cons (cdr list) stack) (cons (make-bson-array) bson-array-stack)))
+	  (t (bson-encode-cons (cdr list) stack (encode-cons-helper-1 (car list) bson-array-stack))))))
 
-(defmethod bson-encode ( (key string) (value cons) &key )
+(defmethod bson-encode ((key string) (value cons) &key)
   (bson-encode key (bson-encode-cons value () (list (make-bson-array :size (* (length value) 12))))))

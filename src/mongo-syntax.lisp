@@ -1,13 +1,13 @@
 (in-package :cl-mongo)
 
 (defmacro $exp+ (&rest args)
-  (cond (  (zerop (length args) )  '())
-	(  (symbolp (car args) ) (cond ( (fboundp (car args)) `(progn ,args))
-				       ( (boundp (car args)) `(cons ,(car args) ($exp+ ,@(cdr args))))
-				       ( t                   `(list ,(car args) ,@(cdr args)))))
-	(  (atom  (car args) ) `(cons ,(car args) ($exp+ ,@(cdr args))))
-	(  (consp (car args) ) `(cons ($exp+ ,@(car args) ) ($exp+ ,@(cdr args))))
-	(t (format t "can only handle atoms and cons")))) 
+  (cond ((zerop (length args))  '())
+	((symbolp (car args)) (cond ((fboundp (car args)) `(progn ,args))
+				       ((boundp (car args)) `(cons ,(car args) ($exp+ ,@(cdr args))))
+				       (t                   `(list ,(car args) ,@(cdr args)))))
+	((atom  (car args)) `(cons ,(car args) ($exp+ ,@(cdr args))))
+	((consp (car args)) `(cons ($exp+ ,@(car args)) ($exp+ ,@(cdr args))))
+	(t (format t "can only handle atoms and cons"))))
 
 
 (defmacro construct-$+- (val arg &rest args)
@@ -25,10 +25,10 @@
 
 (defmacro expand-selector (&rest args)
   `(let ((result ,@args))
-     (cond ( (typep result 'kv-container) result)
-	   ( (typep result 'pair)         result)
-	   ( (null result)                result)
-	   ( t ($+ result)))))
+     (cond ((typep result 'kv-container) result)
+	   ((typep result 'pair)         result)
+	   ((null result)                result)
+	   (t ($+ result)))))
 
 ;(op-split (list "k" "l" 8)) ---> ("k" "l"), 8
 
@@ -38,7 +38,7 @@
       (op-split (cdr lst) (cons (car lst) accum))))
 
 (defun unwrap (lst)
-  (if (or (atom lst) (cdr lst) )
+  (if (or (atom lst) (cdr lst))
       lst
       (unwrap (car lst))))
 
@@ -56,11 +56,11 @@
 
 
 (defun map-reduce-op (op lst)
-  (reduce (lambda (x y) (kv x y) ) (mapcar (lambda (l) ($op* op l) ) lst)))
+  (reduce (lambda (x y) (kv x y)) (mapcar (lambda (l) ($op* op l)) lst)))
 
 (defmacro $op (op &rest args)
-  (cond ( (consp (car args) ) `(map-reduce-op ,op ($exp+ ,@args)))
-	( t                   `($op* ,op ,@args))))
+  (cond ((consp (car args)) `(map-reduce-op ,op ($exp+ ,@args)))
+	(t                   `($op* ,op ,@args))))
 
 
 (defmacro $ (&rest args)
@@ -101,7 +101,7 @@
 
 
 (defun empty-str(str)
-  (if (and str (zerop (length str))) 
+  (if (and str (zerop (length str)))
       (format nil "\"\"")
       str))
 
@@ -123,50 +123,55 @@
 
 
 (defmacro set-keys (&rest args)
-  `(cond ( (null ,@args) nil)
-	 ( t  (reduce (lambda (u v) (append u v)) (mapcar (lambda (x) (list x t)) ,@args)))))
+  `(cond ((null ,@args) nil)
+	 (t  (reduce (lambda (u v) (append u v)) (mapcar (lambda (x) (list x t)) ,@args)))))
 
 (defun collect-args (lst &optional accum)
-  (cond ( (null lst) (values (nreverse accum) lst))
-	( (atom lst) (values (list lst) nil)) 
-	( (not (keywordp (car lst) ) ) (error "unexpected format in collect-args"))
-	( (keywordp (cadr lst) ) (collect-args (cdr lst) (cons (car lst) accum)))
-	( (null (cadr lst))    (values (nreverse (cons (car lst) accum)) nil ))
-	(t                     (values (nreverse accum) lst))))
+  (cond ((null lst)
+         (values (nreverse accum) lst))
+	((atom lst)
+         (values (list lst) nil))
+	((not (keywordp (car lst)))
+         (error "unexpected format in collect-args"))
+	((keywordp (cadr lst))
+         (collect-args (cdr lst) (cons (car lst) accum)))
+	((null (cadr lst))
+         (values (nreverse (cons (car lst) accum)) nil))
+	(t (values (nreverse accum) lst))))
 
 (defmacro construct-container* (value args)
-  `(cond ( (consp ,args) (reduce (lambda (x y) (kv x y ) ) (mapcar (lambda (x) (kv x ,value) ) ,args)))
-	 ( t (kv ,args ,value))))
+  `(cond ((consp ,args) (reduce (lambda (x y) (kv x y)) (mapcar (lambda (x) (kv x ,value)) ,args)))
+	 (t (kv ,args ,value))))
 
 
 
-(defmacro $index (collection &rest args) 
+(defmacro $index (collection &rest args)
   `(multiple-value-bind (spec fields) (collect-args (unwrap ($exp+ ,@args)))
      (destructuring-bind (&key show rm all unique drop-duplicates asc desc) (append (set-keys spec) fields)
        (let* ((ascenders   (when asc  (construct-container*   1 asc)))
 	      (descenders  (when desc (construct-container*  -1 desc)))
 	      (index-param (if asc (kv ascenders descenders) descenders)))
-	 (cond ( show (show :indexes) )
-	       ( rm  (progn (cond ( all (nd (db.run-command :deleteindexes :collection ,collection)))
-				  ( t   (nd (db.run-command :deleteindexes :collection ,collection 
+	 (cond (show (show :indexes))
+	       (rm  (progn (cond (all (nd (db.run-command :deleteindexes :collection ,collection)))
+				  (t   (nd (db.run-command :deleteindexes :collection ,collection 
 							    :index index-param))))))
-	       ( t (db.ensure-index ,collection index-param 
+	       (t (db.ensure-index ,collection index-param 
 				    :unique unique :drop-duplicates drop-duplicates)))))))
 	 
 
-;;(db.find "foo" ($ ($ "$min" ($ "value-1" 600)) ($ "$max" ($ "value-1" 610)) ($ "query" ($ nil nil) )) )
+;;(db.find "foo" ($ ($ "$min" ($ "value-1" 600)) ($ "$max" ($ "value-1" 610)) ($ "query" ($ nil nil))))
 
 
-;(normalize-args (list :min '("k" 1) '("z" 89) :max '("l" 2) ))
+;(normalize-args (list :min '("k" 1) '("z" 89) :max '("l" 2)))
 
 (defun normalize-args (lst &optional accum)
-  (cond ( (null lst) (nreverse accum))  
-	( (keywordp (car lst) ) (normalize-args (cddr lst) 
-						(cons (list (cadr lst)) (cons (car lst) accum))))
-	(t  (normalize-args (cdr lst) (cons (cons (car lst) (car accum) ) (cdr accum) )))))
+  (cond ((null lst) (nreverse accum))
+	((keywordp (car lst)) (normalize-args (cddr lst)
+                                              (cons (list (cadr lst)) (cons (car lst) accum))))
+	(t  (normalize-args (cdr lst) (cons (cons (car lst) (car accum)) (cdr accum))))))
 
 (defmacro construct-container-lst* (args)
-  `(reduce (lambda (x y) (kv x y ) ) (mapcar (lambda (x) (kv (car x) (cadr x))) ,args)))
+  `(reduce (lambda (x y) (kv x y)) (mapcar (lambda (x) (kv (car x) (cadr x))) ,args)))
 
 (defmacro $range (&rest args)
   `(let ((lst ($exp+ ,@args)))
@@ -175,12 +180,12 @@
 	     (max-arg (when max (kv "$max" (construct-container-lst* max))))
 	     (query   (kv "query" (kv nil nil))))
 	 (if min-arg 
-	     (kv query min-arg max-arg) 
-  	     (kv query max-arg)))))) 
-  
+	     (kv query min-arg max-arg)
+  	     (kv query max-arg))))))
+
 (defmacro upd (op &rest args)
-  (cond ( (consp (car args) ) `(kv ,op (construct-container-lst* ($exp+ ,@args))))
-	( t                   `(kv ,op (construct-container-lst* (list ($exp+ ,@args)))))))
+  (cond ((consp (car args)) `(kv ,op (construct-container-lst* ($exp+ ,@args))))
+	(t                   `(kv ,op (construct-container-lst* (list ($exp+ ,@args)))))))
 
 (defmacro $inc (&rest args)
   `(upd "$inc" ,@args))
@@ -188,7 +193,7 @@
 (defmacro $set (&rest args)
   `(upd "$set" ,@args))
 
-; ( $unset "k" "l")
+; ($unset "k" "l")
 (defmacro $unset (&rest args)
   `(kv "$unset" (construct-container* 1 (unwrap ($exp+ ,@args)))))
 

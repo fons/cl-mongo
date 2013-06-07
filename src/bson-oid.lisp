@@ -9,7 +9,7 @@
   (:default-initargs
    :oid (uuid:uuid-to-byte-array (uuid:make-v4-uuid))))
 
-(defun make-bson-oid( &key (oid nil oid-supplied-p))
+(defun make-bson-oid(&key (oid nil oid-supplied-p))
   (if oid-supplied-p
       (make-instance 'bson-oid :oid oid)
       (make-instance 'bson-oid)))

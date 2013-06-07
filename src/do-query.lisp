@@ -16,9 +16,8 @@
       (values head  (list (car head) 36 (nth 7 head)  array)))))
 
 
-(defun perf.db.find ( collection qm  &key (query (bson-encode "query" (kv nil nil)) ) (mongo nil) (options 0) (skip 0) (limit 0) (selector nil) )
-  (let ((mongo (or mongo (mongo)))
-	(doccount 0)
+(defun perf.db.find (collection qm  &key (query (bson-encode "query" (kv nil nil))) (mongo (mongo)) (options 0) (skip 0) (limit 0) (selector nil))
+  (let ((doccount 0)
 	(next-cursor-id 0))
     (labels ((query ()
 	       (mongo-message mongo (mongo-query 
@@ -33,7 +32,7 @@
 				     (int64-to-octet cursor-id) :limit limit)))
 	     (decode-it (elem)
 	       (bson-decode (nth 0 elem) (nth 1 elem) (nth 2 elem)  (nth 3 elem))))
-      (multiple-value-bind (header docs) (perf.mongo-reply (query) )
+      (multiple-value-bind (header docs) (perf.mongo-reply (query))
 	(incf doccount (nth 7 header))
 	(setf next-cursor-id (nth 5 header)) 
 	(funcall qm (decode-it docs))
@@ -41,8 +40,7 @@
 	   (multiple-value-bind (h1 d1) (perf.mongo-reply (get-more next-cursor-id))
 	     (incf doccount (nth 7 h1))
 	     (setf next-cursor-id (nth 5 h1)) 
-	     (funcall qm (decode-it d1))
-	     )
+	     (funcall qm (decode-it d1)))
 	   (when (zerop next-cursor-id) (return nil)))))
     doccount))
 
@@ -51,7 +49,7 @@
 (defvar *RUNNERS* 0)
 
 #|
-(defun mongodb-reader (coll lock cv &key (query (bson-encode "query" (kv nil nil)) ) (mongo nil) (limit 0) (selector nil) )
+(defun mongodb-reader (coll lock cv &key (query (bson-encode "query" (kv nil nil))) (mongo (mongo)) (limit 0) (selector nil))
   (lambda ()
     (labels ((queue-data (item)
 	       (push item *Q*))
@@ -67,7 +65,7 @@
 	  (format t "~% error ~A" c)))
       (set-runners 0))))
 |#
-(defun mongodb-reader (coll lock cv &key (query (bson-encode "query" (kv nil nil)) ) (mongo nil) (limit 0) (selector nil) )
+(defun mongodb-reader (coll lock cv &key (query (bson-encode "query" (kv nil nil))) (mongo (mongo)) (limit 0) (selector nil))
   (lambda ()
     (labels ((queue-data (item)
 	       (push item *Q*))
@@ -81,7 +79,7 @@
       (set-runners 0))))
 
 
-(defun th-writer(coll lock cv &key (query (bson-encode "query" (kv nil nil)) ) (mongo nil) (limit 0) (selector nil) )
+(defun th-writer (coll lock cv &key (query (bson-encode "query" (kv nil nil))) (mongo (mongo)) (limit 0) (selector nil))
   (bordeaux-threads:make-thread (mongodb-reader coll lock cv :query query :mongo mongo :limit limit :selector selector) :name "th-writer"))
 
 
@@ -89,14 +87,14 @@
   (lambda (lst)
     (do ()
 	((null lst) 'done)
-      (push (funcall fn (pop lst)) *R* ))))
+      (push (funcall fn (pop lst)) *R*))))
 
-(defun queue-reader(fn lock cv lock2 cv2)
+(defun queue-reader (fn lock cv lock2 cv2)
   (lambda ()
     (progn
       (bordeaux-threads:acquire-lock lock2)
       (bordeaux-threads:acquire-lock lock)
-      (when ( = -1 *RUNNERS* )
+      (when (= -1 *RUNNERS*)
 	(bordeaux-threads:condition-wait cv lock))
       (block top
 	(loop
@@ -104,11 +102,11 @@
 	     (do ()
 		 ((null *Q*) 'done)
 	       (funcall fn (pop *Q*)))
-	     (when (zerop *RUNNERS* )
+	     (when (zerop *RUNNERS*)
 	       (progn
 		 (bordeaux-threads:release-lock lock)
 		 (return-from top 'done)))
-	     (bordeaux-threads:condition-wait cv  lock)))) 
+	     (bordeaux-threads:condition-wait cv lock)))) 
       (bordeaux-threads:condition-notify cv2)
       (bordeaux-threads:release-lock lock2))))
       
@@ -117,7 +115,7 @@
   (bordeaux-threads:make-thread (queue-reader fun lock-q cv-q lock-r cv-r) :name "th-reader"))
 
   
-(defun do-reduce (fn &key (initial-value nil) )
+(defun do-reduce (fn &key (initial-value nil))
   (let ((lvalue (or initial-value (pop *R*))))
     (do ()
 	((null *R*) 'done)
@@ -128,8 +126,8 @@
   (setf (gethash (doc-id doc) ht) doc)
   ht)
 
-(defun do-query(coll &key (map-fn #'identity) (reduce-fn #'collect-to-hash) (initial-value (make-hash-table :test 'equal :size 100))
-		(query (bson-encode "query" (kv nil nil)) ) (mongo nil) (limit 0) (selector nil) )
+(defun do-query (coll &key (map-fn #'identity) (reduce-fn #'collect-to-hash) (initial-value (make-hash-table :test 'equal :size 100))
+		(query (bson-encode "query" (kv nil nil))) (mongo (mongo)) (limit 0) (selector nil))
 " Performs a multi-threaded query on a mongo database.  coll is the collection name.  The reduce-fn keyword is used to specify a function which 
 will be called for each member of a batch of data returned from mongodb.  
 The reduce-fn function is executed while the query for the next batch is in progress. The default for reduce-fn is the identity function. 
