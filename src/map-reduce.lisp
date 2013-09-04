@@ -5,13 +5,13 @@
 |#
 
 (defmacro $map-reduce (collection map reduce &key (query nil) (limit 0) (out nil) 
-		       (keeptemp nil) (finalize nil) (verbose t) )
+		       (keeptemp nil) (finalize nil) (verbose t))
   "Run map reduce on the mongo server. map and reduce are either the names of the 
 javascript functions, created with defjs or defsrvjs or are function definitions in javascript.
 The keywords refer to option available for map reduce in mongo. This returns a result summary document.
 When using :keeptemp t without specificing :out the collection is mr.<collection> "
     `(db.find "$cmd" (kv (kv "mapreduce" ,collection) 
-			 (kv "map"    (or (jsdef ,map) ',map ))
+			 (kv "map"    (or (jsdef ,map) ',map))
 			 (kv "reduce" (or (jsdef ,reduce) ',reduce))
 			 (when ,finalize (kv "finalize" (jsdef ,finalize)))
 			 (kv "out"      (if ,out ,out (concatenate 'string "mr." ,collection))) 
@@ -22,17 +22,17 @@ When using :keeptemp t without specificing :out the collection is mr.<collection
   
 (defun mr.p (results)
   "show the contents of the results collection map-reduce created" 
-  (when results (db.find (get-element "result" (car (docs results ))) :all)))
+  (when results (db.find (get-element "result" (car (docs results))) :all)))
 
 
 
 ;;
 
-(defun mr.collections(&key (mongo nil) )
+(defun mr.collections(&key (mongo (mongo)))
   (mapcar (lambda (d) (get-element "name" d)) 
 	  (docs (db.find "system.namespaces" ($ "name" ($/ "[_]*.mr." "i")) :limit 0 :mongo mongo))))
 
-(defun mr.gc* ( query &key (mongo nil) )
+(defun mr.gc* (query &key (mongo (mongo)))
   (let ((mr-ns (mapcar (lambda (d) (get-element "name" d)) 
 		       (docs (db.find "system.namespaces" 
 				      (kv "name" ($/ query "i")) 
@@ -48,11 +48,11 @@ When using :keeptemp t without specificing :out the collection is mr.<collection
       (dolist (el (tmps))
 	(db.run-command :drop :collection (coll el) :mongo mongo)))))
 
-(defun mr.gc (&key (mongo nil) )
+(defun mr.gc (&key (mongo (mongo)))
   "remove the temporary collections created by map-reduce"
   (mr.gc* "[_]*.tmp.mr." :mongo mongo))
 
-(defun mr.gc.all (&key (mongo nil) )
+(defun mr.gc.all (&key (mongo (mongo)))
   "remove the all collections created by map-reduce, temporary as well as permanent"
   (mr.gc* "[_]*.mr." :mongo mongo))
 
@@ -131,7 +131,7 @@ When using :keeptemp t without specificing :out the collection is mr.<collection
   
 
 ;($map-reduce "foo" m r  :out "testit" :query ($> "l" -900) :limit 2)
-;($map-reduce "foo" m r  :out "testit" :query ($> "l" -900) )
+;($map-reduce "foo" m r  :out "testit" :query ($> "l" -900))
 ;(mr-results ($map-reduce "foo" m r :query ($> "l" -9)))
 (defjs at()
   (let ((arr (make-array)))

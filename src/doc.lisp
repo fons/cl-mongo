@@ -4,23 +4,23 @@
 ;; This uses documentation-template to generate reasonably useful 
 ;; documentation. Some of the edi weitz specific stuff is replaced.
 
-(defvar *REPO-ROOT* nil "root of the repository; used for documentation generation")
+(defvar *REPO-ROOT* (asdf:system-relative-pathname :cl-mongo "./") "root of the repository; used for documentation generation")
 
-(defun string-replace*(sep new str)
+(defun string-replace* (sep new str)
   (let ((l ()))
     (do ((pos  (search sep str :test #'string=)
 	       (search sep str :test #'string=)))
 	((or (null pos) (eql 0 pos)))
       (push (subseq str 0 pos) l)
       (push new l)
-      (setf str (subseq str (+ pos (length sep) ))))
+      (setf str (subseq str (+ pos (length sep)))))
     (nreverse (cons str l))))
 
-(defun string-replace(sep new str)
+(defun string-replace (sep new str)
   (let ((L (string-replace* sep new str)))
     (reduce (lambda (s1 s2) (concatenate 'string s1 s2)) L :initial-value "")))
 
-(defun slurp-stream(stream)
+(defun slurp-stream (stream)
   ;;from
   ;;www.emmett.ca/~sabetts/slurp.html
   ;;
@@ -33,7 +33,7 @@
       (with-open-file (stream path :direction :output
 			      :if-exists :supersede :if-does-not-exist :create)
 	(write-sequence str stream))
-    (error(c) 
+    (error(c)
       (format t "error [~A] on writing to ~A" c path))))
 
 (defun load-file(path)
@@ -59,7 +59,7 @@
   (let* ((start-token "<!--")
 	 (end-token   "-->")
 	 (start-comment (search start-token str))
-	 (end-comment   (search end-token str) )
+	 (end-comment   (search end-token str))
 	 (piece     (subseq str 0 start-comment)))
     (if end-comment
 	(segment* (subseq str (+ (length end-token) end-comment)) (cons piece accum))
@@ -79,7 +79,7 @@
     piece))
 
 (defun strip-comments (str)
-  (rebuild* (segment* str () ) ""))
+  (rebuild* (segment* str ()) ""))
 
 (defun gendoc (target) 
   (progn
@@ -89,7 +89,7 @@
     (write-file target (customize (load-file target)))))
 
 
-(defun generate-readme (&key (path *REPO-ROOT*) ) 
+(defun generate-readme (&key (path *REPO-ROOT*)) 
 " This function generates a README.md file with the latest api description.
 The :path keyword specifies the location. It expects a sub-directory <path>/doc. 
 Api documentation is generated on the fly, by extracting comments from the classes, 
@@ -99,15 +99,15 @@ appending the api documentation to <path>/doc/readme-base.md.
 :path or *REPO-ROOT* are typically set to the root of the repository.
 "
 (handler-case 
-     (let* ((index-path  (format nil "~A~A" (make-pathname :directory path) "/doc/index.html"))
-	    (readme-path (format nil "~A~A" (make-pathname :directory path) "/doc/readme-base.md"))
-	    (target      (format nil "~A~A" (make-pathname :directory path) "README.md")))
-	(progn 
-	  (gendoc index-path)
-	  (write-file target (concatenate 'string (load-file readme-path)
-					  (select-body (strip-comments (load-file index-path)))))))
-    (error(c) 
-      (format t "error [~A] on writing the readme to ~A. Is *REPO-ROOT* [~A] set ok ?" c path *REPO-ROOT*))))
+    (let* ((index-path  (format nil "~A~A" (make-pathname :directory path) "/doc/index.html"))
+           (readme-path (format nil "~A~A" (make-pathname :directory path) "/doc/readme-base.md"))
+           (target      (format nil "~A~A" (make-pathname :directory path) "README.md")))
+      (progn 
+        (gendoc index-path)
+        (write-file target (concatenate 'string (load-file readme-path)
+                                        (select-body (strip-comments (load-file index-path)))))))
+  (error(c) 
+    (format t "error [~A] on writing the readme to ~A. Is *REPO-ROOT* [~A] set ok ?" c path *REPO-ROOT*))))
   
 ;----
 
