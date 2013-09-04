@@ -37,6 +37,7 @@
    :db.sort
    :db.next
    :db.iter
+   :db.iterator
    :db.stop
    :db.delete
    :db.ensure-index

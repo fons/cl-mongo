@@ -137,11 +137,11 @@
 (defun mongo-reply (array) ;;FIXME defmethod?
   "Extract reply parameters"
   (labels ((header (array)
-             (loop
+             #+nil(loop
                 for i from 0 to 32 by 4
                 when (/= i 24)
                 collect (octet-to-int32.1 array i))                  
-	     #+nil(let ((lst ()))
+	     (let ((lst ()))
 	       (push (octet-to-int32.1 array 0)   lst)   ; length
 	       (push (octet-to-int32.1 array 4)   lst)   ; request id
 	       (push (octet-to-int32.1 array 8)   lst)   ; response to
