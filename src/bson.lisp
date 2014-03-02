@@ -83,7 +83,7 @@
 	       (add-octets (byte-to-octet (type-id value)) array)
 	       (add-octets (int32-to-octet (length (data value))) array)
 	       (add-octets (data value) array))) 
-      (bson-encode key value :array array :type type :encoder #'encode-value))))
+      (call-next-method key value :array array :type type :encoder #'encode-value))))
 
 ;
 ; The array type is the parent class of other types like string. So see if a type and encoder is
