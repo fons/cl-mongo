@@ -2,6 +2,7 @@
 
 (defpackage #:cl-mongo
   (:use #:common-lisp #:babel #:uuid #:usocket)
+  (:nicknames #:mongo)
   (:export
 
    ;;
@@ -39,7 +40,7 @@
    :db.iter
    :db.iterator
    :db.stop
-   :db.delete
+   :db.delete   
    :db.ensure-index
    :db.run-command
    :db.indexes
