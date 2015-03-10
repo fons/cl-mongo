@@ -28,6 +28,7 @@
    :mongo-swap
    :with-mongo-connection
    :kv
+   :drop
    
    :db.create-collection
    :db.use
