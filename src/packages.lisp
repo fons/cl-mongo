@@ -83,6 +83,8 @@
    :$exists
    :$/
    :$not 
+   :$and
+   :$or
    :$em
    :$where
    :$index 
