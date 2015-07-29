@@ -15,6 +15,7 @@
    :collect-all-elements
    :rm-element
    :ht->document
+   :document->ht
    :mapdoc
    :doc-id
    :get-keys
