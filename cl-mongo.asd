@@ -17,9 +17,10 @@
 	       :lisp-unit
 	       :parenscript
 	       :split-sequence
-	       :usocket)
+	       :usocket
+               :cl-scram)
   :serial t
-  :components 
+  :components
  ((:module "src"
     :serial t
     :components ((:file "packages")
@@ -57,19 +58,9 @@
   :description "testing cl-mongo"
   :depends-on (:cl-mongo)
   :serial t
-  :components 
+  :components
   ((:module "test"
     :serial t
     :components ((:file "package")
 		 (:file "test-utils")
 		 (:file "regression")))))
-
-
-
-
-
-
-
-
-
-
