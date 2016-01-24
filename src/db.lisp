@@ -333,7 +333,9 @@ For most commands you can just uses the key-value shown in the mongo documentati
   (assert (not (null collection)))
   (db.find "$cmd" (kv (kv "dropIndexes" collection) (kv "index" index)) :mongo mongo))
 
-(defmethod db.run-command ((cmd (eql :drop)) &key (mongo (mongo)) (collection nil) (index "*"))
+(defmethod db.run-command ((cmd (eql :drop)) &key (mongo (mongo)) 
+					       (collection nil) 
+					       (index "*"))
   (assert (not (null collection)))
   (db.find "$cmd" (kv->ht (kv "drop" collection)) :mongo mongo))
 
