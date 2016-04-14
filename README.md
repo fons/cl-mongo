@@ -1,5 +1,7 @@
 # cl-mongo
 
+[![Join the chat at https://gitter.im/fons/cl-mongo](https://badges.gitter.im/fons/cl-mongo.svg)](https://gitter.im/fons/cl-mongo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 
 ## Intro
 
