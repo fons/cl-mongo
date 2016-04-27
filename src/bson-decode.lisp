@@ -74,7 +74,7 @@
                  (setf (gethash key ht) (byte-to-bool (elt array pos)))
                  (incf pos 1))
                 ((= type +bson-data-date+)
-                 (setf (gethash key ht) (make-bson-time (octet-to-uint64.1 array pos)))
+                 (setf (gethash key ht) (make-bson-time (octet-to-int64.1 array pos)))
                  (incf pos 8))  
                 ((= type +bson-data-null+)
                  (setf (gethash key ht) nil))
