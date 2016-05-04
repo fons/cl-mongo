@@ -278,7 +278,8 @@ Create an index specified by the keys in a collection
 		 (kv (kv "ns"   (full-collection-name mongo collection))
 		     (kv "key"  (force-float index))
 		     (spec-gen unique drop-duplicates)
-		     (kv "name" (keys->name (ht->list index))))))))
+		     (kv "name" (keys->name (ht->list index))))
+                 :mongo mongo))))
 
 (defmethod db.ensure-index ((collection string) (index kv-container)
 			    &key (mongo (mongo)) (unique nil) (drop-duplicates nil))

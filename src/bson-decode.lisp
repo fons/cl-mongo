@@ -60,7 +60,7 @@
                         (size (if (eql type #x02)
                                   (octet-to-int32.1 array (+ pos 5))
                                   (octet-to-int32.1 array pos)))
-                        (offset (if (eql type #x02) 9 5))
+                        (offset (+ pos (if (eql type #x02) 9 5)))
                         (binary (bson-binary type (subseq array offset (+ offset size)))))
                    (setf (gethash key ht) binary)
                    (incf pos totalsize)))

@@ -4,10 +4,10 @@
  shell commands
 |# 
 
-(defun docs (result)
+(defun docs (result &key (mongo (mongo)))
   "Stop the iterator (if any) and return the list of documents returned by the query. 
-Typical ue would be in conjunction with db.find like so (docs (iter (db.find 'foo' 'll)))"
-  (cadr (db.stop result)))
+Typical use would be in conjunction with db.find like so (docs (iter (db.find 'foo' 'll)))"
+  (cadr (db.stop result :mongo mongo)))
   
 (defun iter (result &key (mongo (mongo)) (max-per-call 0))
   "Exhaustively iterate through a query. The maximum number of responses 
