@@ -99,6 +99,21 @@
 (defmacro $size (&rest args)
   `($op "$size" ,@args))
 
+(defmacro $or (&rest args)
+  (let ((size (length args))
+	(arr (gensym)))
+    `(let ((,arr (make-bson-array :size ,size)))
+       ,@(loop for arg in args
+	    collect `(bson-array-push ,arg ,arr))
+       (kv "$or" ,arr))))
+
+(defmacro $and (&rest args)
+  (let ((size (length args))
+	(arr (gensym)))
+    `(let ((,arr (make-bson-array :size ,size)))
+       ,@(loop for arg in args
+	    collect `(bson-array-push ,arg ,arr))
+       (kv "$and" ,arr))))
 
 (defun empty-str(str)
   (if (and str (zerop (length str)))

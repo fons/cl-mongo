@@ -2,6 +2,7 @@
 
 (defpackage #:cl-mongo
   (:use #:common-lisp #:babel #:uuid #:usocket)
+  (:nicknames #:mongo)
   (:export
 
    ;;
@@ -27,6 +28,7 @@
    :mongo-swap
    :with-mongo-connection
    :kv
+   :drop
    
    :db.create-collection
    :db.use
@@ -39,7 +41,7 @@
    :db.iter
    :db.iterator
    :db.stop
-   :db.delete
+   :db.delete   
    :db.ensure-index
    :db.run-command
    :db.indexes
@@ -81,6 +83,8 @@
    :$exists
    :$/
    :$not 
+   :$and
+   :$or
    :$em
    :$where
    :$index 

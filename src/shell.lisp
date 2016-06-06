@@ -44,6 +44,9 @@ which deletes all documents in foo, with field key equal to 1."
 	((zerop line))
       (delete-docs))))
 
+(defun drop (collection &key (mongo (mongo)))
+  (db.run-command "drop" :arg collection))
+
 (defvar *indent*)
 
 (defun new-line (stream)
