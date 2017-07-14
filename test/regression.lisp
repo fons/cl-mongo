@@ -541,6 +541,28 @@
   (dolist (size (geometric-range 2 4))  
     (db.find-selector-regression :collection collection :size size)))
 
+;;--------------------------------------------------------------------------
+
+(defun test-uri-parsing (uri host port db)
+  (let ((name (gensym)))
+	(ignore-errors
+	  (parse-mongo-uri uri name))
+	(let ((connection (mongo :name name)))
+	  (assert-equal host (cl-mongo::host connection))
+	  (assert-equal port (cl-mongo::port connection))
+	  (assert-equal db (cl-mongo::db connection)))
+	(with-output-to-string (*standard-output*)
+	  (mongo-close name))))
+
+(define-test uri-parsing
+  "This tests a variety of URIs (but doesn't test username/password)"
+  (test-uri-parsing "mongodb://foo1.bar:123/baz1" "foo1.bar" 123 "baz1")
+  (test-uri-parsing "mongo://foo2.bar:234/baz2" "foo2.bar" 234 "baz2")
+  (test-uri-parsing "mongodb://foo3.bar/baz3" "foo3.bar" *mongo-default-port* "baz3")
+  (test-uri-parsing "mongodb://foo4.bar:345" "foo4.bar" 345 *mongo-default-db*)
+  (test-uri-parsing "mongodb://foo5.bar" "foo5.bar" *mongo-default-port* *mongo-default-db*)
+  (test-uri-parsing "mongodb://user6:pass6@foo6.bar:456/baz" "foo6.bar" 456 "baz"))
+
 ;;;;;;;;;;;;;
 
 

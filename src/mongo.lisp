@@ -53,6 +53,17 @@ Each connection is a added to a global registry."))
                      (db *mongo-default-db*) (name (gensym)))
   (make-instance 'mongo :host host :port port :db db :socket nil :name name))
 
+(defun parse-mongo-uri (uri &optional (name :default))
+  (bind (((:values _ results)
+          (ppcre:scan-to-strings "^mongo(db)?://(([^:]+):([^@]+)@)?([^:/]+)(:([0-9]+))?(/(.*)$)?" uri))
+         (#(_ auth? username password host _ port _ db) results))
+    (apply #'make-mongo (append
+                         (list :name name)
+                         (if host (list :host host))
+                         (if port (list :port (parse-integer port)))
+                         (if db (list :db db))))
+    (if auth? (db.auth username password))))
+
 (defmethod print-object ((mongo mongo) stream)
   (format stream "(type-of ~S) [name : ~A ] ~% {[id : ~A] [port : ~A] [host : ~A] [db : ~A]} ~%"
           (type-of mongo)
