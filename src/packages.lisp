@@ -1,7 +1,7 @@
 (in-package #:cl-user)
 
 (defpackage #:cl-mongo
-  (:use #:common-lisp #:babel #:uuid #:usocket)
+  (:use #:common-lisp #:babel #:uuid #:usocket #:bind)
   (:export
 
    ;;
@@ -20,6 +20,7 @@
    :get-keys
 
    ;;commands
+   :parse-mongo-uri
    :mongo
    :mongo-registered
    :mongo-show

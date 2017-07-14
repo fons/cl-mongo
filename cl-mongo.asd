@@ -13,8 +13,10 @@
   :depends-on (:uuid
 	       :babel
 	       :bordeaux-threads
+	       :cl-ppcre
 	       :documentation-template
 	       :lisp-unit
+	       :metabang-bind
 	       :parenscript
 	       :split-sequence
 	       :usocket)
