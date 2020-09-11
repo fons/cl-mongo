@@ -4,7 +4,7 @@
   mongo map reduce
 |#
 
-(defmacro $map-reduce (collection map reduce &key (query nil) (limit 0) (out nil) 
+(defmacro $map-reduce (collection map reduce &key (query nil) (limit nil) (out nil) 
 		       (keeptemp nil) (finalize nil) (verbose t))
   "Run map reduce on the mongo server. map and reduce are either the names of the 
 javascript functions, created with defjs or defsrvjs or are function definitions in javascript.
@@ -16,8 +16,7 @@ When using :keeptemp t without specificing :out the collection is mr.<collection
 			 (when ,finalize (kv "finalize" (jsdef ,finalize)))
 			 (kv "out"      (if ,out ,out (concatenate 'string "mr." ,collection))) 
 			 (kv "verbose"  ,verbose)
-			 (kv "limit"    ,limit)
-			 (kv "keeptemp" ,keeptemp)
+			 (when ,limit (kv "limit" ,limit))
 			 (kv "query"    ,query))))
   
 (defun mr.p (results)
