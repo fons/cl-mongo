@@ -11,41 +11,42 @@
   :licence "MIT"
   :description "lisp system to interact with mongodb, a non-sql db"
   :depends-on (:uuid
-	       :babel
-	       :bordeaux-threads
-	       :documentation-template
-	       :lisp-unit
-	       :parenscript
-	       :split-sequence
-	       :usocket)
+               :babel
+               :bordeaux-threads
+               :documentation-template
+               :lisp-unit
+               :parenscript
+               :split-sequence
+               :usocket
+               :cl-scram)
   :serial t
-  :components 
- ((:module "src"
+  :components
+  ((:module "src"
     :serial t
     :components ((:file "packages")
-		 (:file "octets")
-		 (:file "pair")
-		 (:file "encode-float")
-		 (:file "bson-oid")
-		 (:file "bson-binary")
-		 (:file "bson-time")
-		 (:file "bson-regex")
-		 (:file "bson-code")
-		 (:file "bson")
-		 (:file "bson-decode")
-		 (:file "bson-array")
-		 (:file "document")
-		 (:file "mongo-syntax")
-		 (:file "java-script")
-		 (:file "bson-encode-container")
-		 (:file "protocol")
-		 (:file "mongo")
-		 (:file "db")
-		 (:file "mem")
-		 (:file "do-query")
-		 (:file "doc")
-		 (:file "map-reduce")
-		 (:file "shell")))
+                 (:file "octets")
+                 (:file "pair")
+                 (:file "encode-float")
+                 (:file "bson-oid")
+                 (:file "bson-binary")
+                 (:file "bson-time")
+                 (:file "bson-regex")
+                 (:file "bson-code")
+                 (:file "bson")
+                 (:file "bson-decode")
+                 (:file "bson-array")
+                 (:file "document")
+                 (:file "mongo-syntax")
+                 (:file "java-script")
+                 (:file "bson-encode-container")
+                 (:file "protocol")
+                 (:file "mongo")
+                 (:file "db")
+                 (:file "mem")
+                 (:file "do-query")
+                 (:file "doc")
+                 (:file "map-reduce")
+                 (:file "shell")))
    (:static-file "README.md")
    (:static-file "COPYING")))
 
@@ -57,19 +58,9 @@
   :description "testing cl-mongo"
   :depends-on (:cl-mongo)
   :serial t
-  :components 
+  :components
   ((:module "test"
     :serial t
     :components ((:file "package")
-		 (:file "test-utils")
-		 (:file "regression")))))
-
-
-
-
-
-
-
-
-
-
+                 (:file "test-utils")
+                 (:file "regression")))))
