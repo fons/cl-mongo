@@ -26,13 +26,15 @@ mongo documentation.
 (defmethod db.find ((collection string) (kv t)
                     &key (mongo (mongo)) (options 0) (skip 0) (limit 1) (selector nil))
   (labels ((query ()
-             (mongo-message mongo (mongo-query
-                                   (full-collection-name mongo collection) kv
-                                   :limit limit
-                                   :skip skip
-                                   :selector (bson-encode-container (expand-selector selector))
-                                   :options options))))
-    (multiple-value-bind (header docs) (mongo-reply (query))
+             (mongo-message mongo
+                            (mongo-query
+                             (full-collection-name mongo collection) kv
+                             :limit limit
+                             :skip skip
+                             :selector (bson-encode-container (expand-selector selector))
+                             :options options))))
+    (multiple-value-bind (header docs)
+        (mongo-reply (query))
       (list (append header (list collection)) docs))))
 
 (defmethod db.find ((collection symbol) (kv t)
@@ -62,9 +64,13 @@ mongo documentation.
 		    :mongo mongo :options options :skip skip :limit limit :selector selector))
 
 (defmethod db.find ((collection string) (kv kv-container)
-		    &key (mongo (mongo)) (options 0) (skip 0) (limit 1) (selector nil))
+                    &key (mongo (mongo)) (options 0) (skip 0) (limit 1) (selector nil))
   (db.find collection (bson-encode-container kv)
-		    :mongo mongo :options options :skip skip :limit limit :selector selector))
+           :mongo mongo
+           :options options
+           :skip skip
+           :limit limit
+           :selector selector))
 
 (defmacro db.sort (collection query &rest args)
   "sort macro : Takes the same arguments and keywords as db.find but converts the query
@@ -405,40 +411,96 @@ all the documents in the collection.
 (defgeneric db.auth (username password &key)
   (:documentation "authenticate a user with a password"))
 
-(defmethod db.auth ((username string) (password string) &key (mongo (mongo)) (mechanism :SCRAM-SHA-1))
+(defun auth-scram-start (username)
+  (let* ((client-nonce (cl-scram:gen-client-nonce))
+         (first-bare (cl-scram:gen-client-initial-message :username username
+                                                          :nonce client-nonce))
+         (request (kv (kv "saslStart" 1)
+                      (kv "mechanism" "SCRAM-SHA-1")
+                      (kv "payload"
+                          (bson-binary :generic (ironclad:ascii-string-to-byte-array
+                                                 first-bare)))
+                      (kv "autoAuthorize" 1)
+                      (kv "options" (kv "skipEmptyExchange" t)))))
+    (values client-nonce
+            first-bare
+            request)))
+
+(defun auth-scram-sha-1 (username password &key mongo)
+  "SCRAM-SHA-1 auth detail see:
+  - http://www.alienfactory.co.uk/articles/mongodb-scramsha1-over-sasl recommended
+  - https://github.com/mongodb/mongo-python-driver/blob/master/pymongo/auth.py#L181 _authenticate_scram"
+  (multiple-value-bind (client-nonce first-bare request)
+      (auth-scram-start username)
+    (let ((response (car (docs (db.find "$cmd" request :limit 1 :mongo mongo)))))
+      (when (= 1
+               (get-element "ok" response))
+        (let* ((payload (babel:octets-to-string (data (get-element "payload" response))))
+               (client-final-message (cl-scram:gen-client-final-message
+                                      :username username
+                                      :password password
+                                      :client-nonce client-nonce
+                                      :client-initial-message first-bare
+                                      :server-response payload))
+               (server-signature (rest (assoc 'cl-scram::server-signature client-final-message)))
+               (final-message (rest (assoc 'cl-scram::final-message client-final-message)))
+               (request (kv (kv "saslContinue" 1)
+                            (kv "conversationId" (get-element "conversationId" response))
+                            (kv "payload"
+                                (bson-binary :generic (ironclad:ascii-string-to-byte-array
+                                                       final-message))))))
+          (let ((response (car (docs (db.find "$cmd"
+                                              request
+                                              :limit 1
+                                              :mongo mongo)))))
+            (if (get-element "done" response)
+                (and (= 1
+                        (get-element "ok" response))
+                     (equal server-signature
+                            (cl-scram:parse-server-signature
+                             :response
+                             (babel:octets-to-string
+                              (data
+                               (get-element "payload" response))))))
+                ;; A third empty challenge may be required if the server does not support
+                ;; skipEmptyExchange: SERVER-44857.
+                (let* ((request (kv (kv "saslContinue" 1)
+                                    (kv "conversationId" (get-element "conversationId" response))
+                                    (kv "payload"
+                                        (bson-binary :generic (ironclad:ascii-string-to-byte-array
+                                                               "")))))
+                       (response (car (docs (db.find "$cmd"
+                                                     request
+                                                     :limit 1
+                                                     :mongo mongo)))))
+                  (get-element "done" response)))))))))
+
+(defun auth-mongodb-cr (username password &key mongo)
+  (let* ((nonce (get-element "nonce" (car (docs (db.run-command 'getnonce :mongo mongo)))))
+         (pwd (concatenate 'string username ":mongo:" password))
+         (md5-pwd (hex-md5 pwd))
+         (md5-pwd-str (ironclad:byte-array-to-hex-string md5-pwd))
+         (md5-key (hex-md5 (concatenate 'string nonce username md5-pwd-str)))
+         (md5-key-str (ironclad:byte-array-to-hex-string md5-key))
+         (request (kv (kv "authenticate" 1)
+                      (kv "user" username)
+                      (kv "nonce" nonce)
+                      (kv "key" md5-key-str))))
+    (= 1
+       (get-element "ok"
+                    (car (docs (db.find "$cmd"
+                                        request
+                                        :limit 1
+                                        :mongo mongo)))))))
+
+(defmethod db.auth ((username string) (password string)
+                    &key
+                      (mongo (mongo))
+                      (mechanism :SCRAM-SHA-1))
   (cond ((equal mechanism :SCRAM-SHA-1)
-          (let* ((nonce (cl-scram:gen-client-nonce))
-                 (pwd (concatenate 'string username ":mongo:" password))
-                 (md5-pwd (hex-md5 pwd))
-                 (md5-pwd-str (ironclad:byte-array-to-hex-string md5-pwd))
-                 (initial-message (cl-scram:gen-client-initial-message :username username
-                                                                       :nonce nonce))
-                 (request (kv (kv "saslStart" 1)
-                              (kv "mechanism" "SCRAM-SHA-1")
-                              (kv "payload"
-                                  (bson-binary :generic (ironclad:ascii-string-to-byte-array
-                                                          (cl-scram:base64-encode initial-message))))))
-                 (response (car (docs (db.find "$cmd" request :limit 1 :mongo mongo))))
-                 (retval (pairlis '(errmsg ok code message binary-message)
-                                   (list (get-element "errmsg" response)
-                                         (get-element "ok" response)
-                                         (get-element "code" response)
-                                         initial-message
-                                         (ironclad:ascii-string-to-byte-array (cl-scram:base64-encode initial-message))))))
-            (list request retval)))
+         (auth-scram-sha-1 username password :mongo mongo))
         ((equal mechanism :MONGODB-CR)
-          (let* ((nonce (get-element "nonce" (car (docs (db.run-command 'getnonce :mongo mongo)))))
-                 (pwd (concatenate 'string username ":mongo:" password))
-                 (md5-pwd (hex-md5 pwd))
-                 (md5-pwd-str (ironclad:byte-array-to-hex-string md5-pwd))
-                 (md5-key (hex-md5 (concatenate 'string nonce username md5-pwd-str)))
-                 (md5-key-str (ironclad:byte-array-to-hex-string md5-key))
-                 (request (kv (kv "authenticate" 1)
-                              (kv "user" username)
-                              (kv "nonce" nonce)
-                              (kv "key" md5-key-str)))
-                 (retval (get-element "ok" (car (docs (db.find "$cmd" request :limit 1 :mongo mongo))))))
-            (if retval t nil)))
+         (auth-mongodb-cr username password :mongo mongo))
         (t nil)))
 
 ;;(db.find "$cmd" (kv (kv "count" "foo")  (kv "query" (kv nil nil)) (kv "fields" (kv nil nil))))

@@ -783,10 +783,10 @@ Generate a time stamp the mongo/bson protocol understands.
 
 
 
-<p><br>[Generic function]<br><a class=none name='db.auth'><b>db.auth</b> <i>username password <tt>&amp;key</tt> mongo</i> =&gt; <i>result</i></a>
+<p><br>[Generic function]<br><a class=none name='db.auth'><b>db.auth</b> <i>username password <tt>&amp;key</tt> mongo mechanism</i> =&gt; <i>result</i></a>
 <blockquote><br>
 
-authenticate a user with a password
+authenticate a user with a password, default <i>mechanism</i> is <b>:SCRAM-SHA-1</b>
 
 </blockquote>
 
